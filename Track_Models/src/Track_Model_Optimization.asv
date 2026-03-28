@@ -33,7 +33,7 @@ theta_max = inf;                                                            % Ma
 
 % Track Relative Twist about x-axis [rad]
 phi_min = -inf;                                                             % Minimum Track Roll in rad
-phi_max = inf;                                                              % Maximum Track Roll in rad
+phi_max = inf;                                                                 % Minimum Left Half Track Width in rad
 
 % Weights
 w_c = 1e-3;
