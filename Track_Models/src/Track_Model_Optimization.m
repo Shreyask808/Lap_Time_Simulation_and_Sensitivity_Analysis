@@ -205,7 +205,7 @@ for k = 1:N
     r_c = w_theta*(theta_ddot^2) + w_mu*(mu_ddot^2) + w_phi*(phi_ddot^2);
     r_w = w_nl*(nl_dot^2) + w_nr*(nr_dot^2);
 
-    obj = obj + e_cline + e_bl + e_br + r_c + r_w;
+    obj = obj + ds*(e_cline + e_bl + e_br + r_c + r_w);
 
     % Dynamics
 
