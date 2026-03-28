@@ -194,7 +194,7 @@ for k = 1:N
     nl_dot = ctrl(4);
     nr_dot = ctrl(5);
     
-     normal = [cos(theta)*sin(mu)*sin(phi) - sin(theta)*cos(phi); sin(theta)*sin(mu)*sin(phi) + cos(theta)*cos(phi); cos(mu)*sin(phi)];
+    normal = [cos(theta)*sin(mu)*sin(phi) - sin(theta)*cos(phi); sin(theta)*sin(mu)*sin(phi) + cos(theta)*cos(phi); cos(mu)*sin(phi)];
     bL_coord = cline_coord + nl*normal;
     bR_coord = cline_coord + nr*normal;
 
