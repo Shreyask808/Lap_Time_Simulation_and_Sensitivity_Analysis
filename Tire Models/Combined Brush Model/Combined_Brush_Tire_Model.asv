@@ -22,6 +22,6 @@ lambda = fmax(0,fmin(2*a,lambda));
 
 % Forces and Moments
 Fx = C_p*sigma_x*(lambda^2)/2 + (sigma_x/(sigma_norm + 1e-6))*mu*w*P_max*((4*a/3) - (lambda^2/a) + (lambda^3/(3*a^2)));                         % Lateral Force in N
-Fy = C_p*sigma_y*(lambda^2)/2 + (sigma_y/(sigma_norm + 1e-6))*mu*w*P_max*((4*a/3) - (lambda^2/a) + (lambda^3/(3*a^2)));                         % Longitudinal Force in N
-Mz = C_p*sigma_y*(((a*lambda^2)/2) - (lambda^3)/3) + (sigma_y/(sigma_norm + 1e-6))*mu*w*P_max*((lambda^3/a) - (lambda^4)/(4*a^2) - lambda^2);   % Aligning Moment in N.m
+Fy = C_p*sigma_y*(lambda^2)/2 + (sigma_y/(sigma_norm + 1e-6))*mu*w*P_max*((4*a/3) - (lambda^2/a) + (lambda^3/(3*a^2)));                         % 
+Mz = C_p*sigma_y*(((a*lambda^2)/2) - (lambda^3)/3) + (sigma_y/(sigma_norm + 1e-6))*mu*w*P_max*((lambda^3/a) - (lambda^4)/(4*a^2) - lambda^2);
 end
