@@ -1,9 +1,9 @@
 clc
 clear
 close all
-import casadi.*
 
 function [Fx,Fy] = combined_brsuh_model(u,v,P_in,R,w,C_p,omega,alpha,Fz,mu_0,mu)
+import casadi.*
 % Effective Radius Calculation
 a = Fz/(2*P_in*w);                                                          % Half of contact patch length (m)
 r = sqrt(R^2 - a^2);                                                        % Effective Radius of the Tire (m)
