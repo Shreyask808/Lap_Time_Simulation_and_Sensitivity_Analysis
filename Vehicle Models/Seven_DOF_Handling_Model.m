@@ -2,11 +2,11 @@ clc
 clear
 close all
 
-function [ode] = Handling_Model(Car,track_data,)
+load('VehicleData.mat');
+
+function [ode] = Handling_Model(Car,track_data)
 import casadi.*
 
-%% Vehicle Parameters
-l = Car.l;                                                                  % Vehicle Wheelbase in m
 %% Direct Multiple Shooting Method 
 N = 2000;
 n_states = 10;
@@ -18,11 +18,66 @@ X_reshape = reshape(X,n_states*(N+1),1);                                    % Co
 U_reshape = reshape(U,u_states*(N),1);                                      % Column vector of all Control Inputs
 states = [X_reshape; U_reshape];                                            % Direct Multiple Shooting States
 
-%% Dynamics Definition
+%% System Definition
 X_sym = SX.sym('X_sym',n_states);
 U_sym = SX.sym('U_sym',u_states);
 s_sym = SX.sym('s_sym');
 
 % Scale States
-lenght_scale = l;
+length_scale = 1/Car.l;                                                     % Length Scaling (m^-1) 
+time_scale = sqrt(Car.g/Car.l);                                             % Time Scale (s^-1)
+speed_scale = 1/sqrt(Car.g*Car.l);                                          % Speed Scale (s/m)
+angle_scale = 1;                                                            % angle Scale (rad^-1)
+force_scale = 1/(Car.m*Car.g);                                              % Force Scale (N^-1)
+
+% Normalized States
+t_N = X_sym(1);
+n_N = X_sym(2);
+psi_N = X_sym(3);
+psi_dot_N = X_sym(4);
+u_N = X_sym(5);
+v_N = X_sym(6);
+O_fl_N = X_sym(7);
+O_fr_N = X_sym(8);
+O_rl_N = X_sym(9);
+O_rr_N = X_sym(10);
+
+% Normalized Control Inputs
+gamma_N = U_sym(1);
+Md_fl_N = U_sym(2);
+Md_fr_N = U_sym(3);
+Md_rl_N = U_sym(4);
+Md_rr_N = U_sym(5);
+
+%% Dynamics Definition
+t = t_N/time_scale;
+n = n_N/length_scale;
+
+psi = psi_N/angle_scale;
+psi_dot = psi_dot_N*time_scale/angle_scale;
+
+u = u_N/speed_scale;
+v = v_N/speed_scale;
+
+O_fl = O_fl_N*time_scale/angle_scale;
+O_fr = O_fr_N*time_scale/angle_scale;
+O_rl = O_rl_N*time_scale/angle_scale;
+O_rr = O_rr_N*time_scale/angle_scale;
+
+
+% Dynamics 
+s_dot = (1/t_scale)*(sigma/(1 - n*curv))*(cos(xi) - (d/l)*sin(xi)*tan(gamma));
+n_N_dot = (n_scale/t_scale)*(sigma)*(sin(xi) + (d/l)*cos(xi)*tan(gamma));
+psi_N_dot = psi_dot_N;
+psi_ddot_N = ;
+u_N_dot = ;
+v_N_dot = ;
+O_fl_N_dot = Md_fl_N/(force_scale*length_scale) - Crr*Fflz - Fflx*rfl;
+O_fr_N_dot = Md_fr_N/(force_scale*length_scale) - Crr*Ffrz - Ffrx*rfr;
+O_rl_N_dot = Md_rl_N/(force_scale*length_scale) - Crr*Frlz - Frlx*rrl;
+O_rr_N_dot = Md_rr_N/(force_scale*length_scale) - Crr*Frrz - Frrx*rrr;
+
+ODE = [1/s_dot; n_N_dot/s_dot; psi_N_dot/s_dot; psi_ddot_N/s_dot; u_N_dot/s_dot; v_N_dot/s_dot; O_fl_N_dot/s_dot; O_fr_N_dot/s_dot; O_rl_N_dot/s_dot; O_rr_N_dot/s_dot];
+f_dynamics = Function('f_dynamics',{X_sym,U_sym,s_sym},{ODE});
+
 end
