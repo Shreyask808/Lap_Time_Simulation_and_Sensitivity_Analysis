@@ -17,11 +17,11 @@ sigma = [sigma_x; sigma_y];                                                 % Ne
 sigma_norm = sqrt(sigma_x^2 + sigma_y^2);                                   % Norm of the Slip Vector
 
 % Adhesion Length
-lambda = 2*a - (C_p*sigma_norm*a^2)/(mu_0*w*P_max);                         % Adhesion Length estimate in m
+lambda = 2*a - (C_p*sigma_norm*a^2)/(mu_0*w*P_max);                         % Adhesion Length estimate (m)
 lambda = fmax(0,fmin(2*a,lambda));
 
 % Forces and Moments
-Fx = C_p*sigma_x*(lambda^2)/2 + (sigma_x/(sigma_norm + 1e-6))*mu*w*P_max*((4*a/3) - (lambda^2/a) + (lambda^3/(3*a^2)));                         % Lateral Force in N
-Fy = C_p*sigma_y*(lambda^2)/2 + (sigma_y/(sigma_norm + 1e-6))*mu*w*P_max*((4*a/3) - (lambda^2/a) + (lambda^3/(3*a^2)));                         % Longitudinal Force in N
-Mz = C_p*sigma_y*(((a*lambda^2)/2) - (lambda^3)/3) + (sigma_y/(sigma_norm + 1e-6))*mu*w*P_max*((lambda^3/a) - (lambda^4)/(4*a^2) - lambda^2);   % Aligning Moment in N.m
+Fx = C_p*sigma_x*(lambda^2)/2 + (sigma_x/(sigma_norm + 1e-6))*mu*w*P_max*((4*a/3) - (lambda^2/a) + (lambda^3/(3*a^2)));                         % Lateral Force (N)
+Fy = C_p*sigma_y*(lambda^2)/2 + (sigma_y/(sigma_norm + 1e-6))*mu*w*P_max*((4*a/3) - (lambda^2/a) + (lambda^3/(3*a^2)));                         % Longitudinal Force (N)
+Mz = C_p*sigma_y*(((a*lambda^2)/2) - (lambda^3)/3) + (sigma_y/(sigma_norm + 1e-6))*mu*w*P_max*((lambda^3/a) - (lambda^4)/(4*a^2) - lambda^2);   % Aligning Moment (N.m)
 end

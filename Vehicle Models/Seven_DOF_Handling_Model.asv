@@ -1,0 +1,16 @@
+clc
+clear
+close all
+
+function [ode] = Handling_Model()
+import casadi.*
+
+%% Direct Multiple Shooting Method
+N = 2000;
+n_states = 10;
+X = SX.sym('X',5,N+1);
+U = SX.sym('U',2,N);
+X_reshape = reshape(X,5*(N+1),1);                                           % Column vector of all States
+U_reshape = reshape(U,2*(N),1);                                             % Column vector of all Control Inputs
+states = [X_reshape; U_reshape];                                            % Direct Multiple Shooting States
+end
