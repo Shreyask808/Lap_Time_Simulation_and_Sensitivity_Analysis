@@ -4,7 +4,7 @@ close all
 
 load('VehicleData.mat');
 
-function [ode] = Handling_Model(Car,track_data)
+function [N,n_states,u_states,ode] = Handling_Model(Car,track_data)
 import casadi.*
 
 %% Direct Multiple Shooting Method 
@@ -43,7 +43,7 @@ O_rl_N = X_sym(9);
 O_rr_N = X_sym(10);
 
 % Normalized Control Inputs
-gamma_N = U_sym(1);
+delta_N = U_sym(1);
 Md_fl_N = U_sym(2);
 Md_fr_N = U_sym(3);
 Md_rl_N = U_sym(4);
@@ -64,8 +64,12 @@ O_fr = O_fr_N*time_scale/angle_scale;
 O_rl = O_rl_N*time_scale/angle_scale;
 O_rr = O_rr_N*time_scale/angle_scale;
 
-gamma = gamma_N/angle_scale;
-Md_fl = Md_fl_N*;
+delta = delta_N/angle_scale;
+Md_fl = Md_fl_N/(length_scale*force_scale);
+Md_fr = Md_fr_N/(length_scale*force_scale);
+Md_rl = Md_rl_N/(length_scale*force_scale);
+Md_rr = Md_rr_N/(length_scale*force_scale);
+
 %% Tire Velocities in Vehile Frame
 % Rear Right tire
 u_rr = u + (Car.Wr/2)*psi_dot;
@@ -86,12 +90,16 @@ v_fr = v - (Car.l - Car.d)*psi_dot;
 %% Tire Slip Angle Definition
 alpha_rr = atan(v_rr/u_rr);                                                 % Slip Angle of Rear Right Tire
 alpha_rl = atan(v_rl/u_rl);                                                 % Slip Angle of Rear Left Tire
-alpha_fl = atan(v_fl/u_fl) + gamma;                                         % Slip Angle of Front Left Tire
-alpha_fr = atan(v_fr/u_fr) + gamma;                                         % Slip Angle of Front Right Tire
+alpha_fl = atan(v_fl/u_fl) + delta;                                         % Slip Angle of Front Left Tire
+alpha_fr = atan(v_fr/u_fr) + delta;                                         % Slip Angle of Front Right Tire
 
 %% Normal Forces Definition
+Drag = -(1/2)*Car.Cd*Car.rho*Car.A*(u^2);
 Downforce = -(1/2)*Car.Cl*Car.rho*Car.A*(u^2);
-
+Fzrr = SX.sym('Fzrr');
+Fzrl = SX.sym('Fzrl');
+Fzfr = SX.sym('Fzfr');
+Fzfl = SX.sym('Fzfl');
 
 %% Tire Forces
 % Rear Right Tire Forces
@@ -106,13 +114,13 @@ Downforce = -(1/2)*Car.Cl*Car.rho*Car.A*(u^2);
 % Front Right Tire Forces
 [Fxfl,Fyfl,Mzfl,p_trailfl] = combined_brsuh_model(u_fl,v_fl,Car.R,Car.w,Car.C_p,Car.kv,O_fl,alpha_fl,Fzfl,Car.mu0,Car.mu);
 
-% Dynamics 
+%% ODE Definitio (Dynamics) 
 s_dot = (1/t_scale)*(sigma/(1 - n*curv))*(cos(xi) - (d/l)*sin(xi)*tan(gamma));
 n_N_dot = (n_scale/t_scale)*(sigma)*(sin(xi) + (d/l)*cos(xi)*tan(gamma));
 psi_N_dot = psi_dot_N;
-psi_ddot_N = ;
-u_N_dot = ;
-v_N_dot = ;
+psi_ddot_N = (1/2)*(-2*Car.d*(Fyrl + Fyrr) + 2*(Md_fl + Md_fr + Md_rl + Md_rr) + (Fxrr - Fxrl)*Car.Wr + (2*(Car.d - Car.l)*(Fyfl + Fyfr) + (Fxfr - Fxfl)*Car.Wf)*cos(delta) + (2*(Car.d - Car.l)*(Fxfl + Fxfr) + (Fyfl - Fyfr)*Car.Wf)*sin(delta))/Car.Iz;
+u_N_dot = (Drag + (Fxrl + Fxrr + (Fxfl + Fxfr)*cos(delta)) - (Fyfr*sin(delta) + Fyfl*sin(delta)))/Car.m + v*psi_dot;
+v_N_dot = (Fyrl + Fyrr + (Fyfl + Fyfr)*cos(delta) + (Fxfl + Fxfr)*sin(delta))/Car.m - u*psi_dot;
 O_fl_N_dot = Md_fl_N/(force_scale*length_scale) - Crr*Fflz - Fflx*rfl;
 O_fr_N_dot = Md_fr_N/(force_scale*length_scale) - Crr*Ffrz - Ffrx*rfr;
 O_rl_N_dot = Md_rl_N/(force_scale*length_scale) - Crr*Frlz - Frlx*rrl;
