@@ -1,13 +1,20 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% This project utilizes CasADi for symbolic differentiation and optimization.
+% Andersson, J. A. E., et al. (2019). "CasADi: a software framework for 
+% nonlinear optimization and optimal control." Mathematical Programming Computation.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 clc
 clear
 close all
 
-load('VehicleData.mat');
-
+%% 7 DOF Plannar Vehicle Handling Model 
 function [N,n_states,u_states,ode] = Handling_Model(Car,track_data)
 import casadi.*
 
-%% Direct Multiple Shooting Method 
+%% Direct Multiple Shooting Method Inputs
 N = 2000;
 n_states = 10;
 u_states = 5;
