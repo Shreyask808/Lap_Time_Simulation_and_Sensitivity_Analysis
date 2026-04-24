@@ -25,6 +25,7 @@ ds = lap_length/N;                                                          % Tr
 f_kappa = casadi.interpolant('f_kappa', 'bspline', {track_data.arc_s},track_data.Omega_z);
 f_nl = casadi.interpolant('f_nl', 'bspline', {track_data.arc_s},track_data.nl);
 f_nr = casadi.interpolant('f_nr', 'bspline', {track_data.arc_s},track_data.nr);
+f_theta = casadi.interpolant('f_theta', 'bspline', {track_data.arc_s},track_data.theta);
 
 X = SX.sym('X',n_states,N+1);
 U = SX.sym('U',u_states,N);
@@ -83,6 +84,11 @@ Md_fl = Md_fl_N/(length_scale*force_scale);
 Md_fr = Md_fr_N/(length_scale*force_scale);
 Md_rl = Md_rl_N/(length_scale*force_scale);
 Md_rr = Md_rr_N/(length_scale*force_scale);
+
+% Symbolic Track Data
+curv = f_kappa(s_sym);
+theta = f_theta(s_sym);
+xi = psi - theta;
 
 %% Tire Velocities in Vehile Frame
 % Rear Right tire
@@ -218,4 +224,5 @@ ubg = [ubg_dynamics; ubg_time; ubg_force; ubg_power];
 g   = [g;X([2:n_states],end) - X([2:n_states],1)]; 
 lbg = [lbg; zeros(n_states-1,1)]; 
 ubg = [ubg; zeros(n_states-1,1)];
+
 end

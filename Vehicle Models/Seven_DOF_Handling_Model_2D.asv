@@ -22,13 +22,16 @@ u_states = 5;                                                               % Nu
 lap_length = track_data(arc_s(end));                                        % Total length of the lap (m)
 s_grid = linspace(0,lap_length,N+1);                                        % Discretized Centerline Arc Length (m)
 ds = lap_length/N;                                                          % Track Centerline Arc Length Step (m)
+f_kappa = casadi.interpolant('f_kappa', 'bspline', {track_data.arc_s},track_data.Omega_z);
+f_nl = casadi.interpolant('f_nl', 'bspline', {track_data.arc_s},track_data.nl);
+f_nr = casadi.interpolant('f_nr', 'bspline', {track_data.arc_s},track_data.nr);
+f_theta = casadi.interpolant('f_theta', 'bspline', {track_data.arc_s},track_data.theta);
 
 X = SX.sym('X',n_states,N+1);
 U = SX.sym('U',u_states,N);
 X_reshape = reshape(X,n_states*(N+1),1);                                    % Column vector of all States
 U_reshape = reshape(U,u_states*(N),1);                                      % Column vector of all Control Inputs
 states = [X_reshape; U_reshape];                                            % Direct Multiple Shooting States
-W_eq = (Car.Wf + Car.Wr)/2;
 
 %% System Definition
 X_sym = SX.sym('X_sym',n_states);
@@ -81,6 +84,11 @@ Md_fl = Md_fl_N/(length_scale*force_scale);
 Md_fr = Md_fr_N/(length_scale*force_scale);
 Md_rl = Md_rl_N/(length_scale*force_scale);
 Md_rr = Md_rr_N/(length_scale*force_scale);
+
+% Symbolic Track Data
+curv = f_kappa(s_sym);
+theta = f_theta(s_sym);
+xi = psi - theta;
 
 %% Tire Velocities in Vehile Frame
 % Rear Right tire
@@ -182,37 +190,38 @@ for k = 1:N
 
     % Normal Force Constraint Definition
     % Front Left Wheel
-    g_force{end+1} = Fzfl - (Car.m*Car.g*Car.d/(2*Car.l) - Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) - Car.Droll*Car.m*(k1(6)/k1(1))*Car.h/(W_eq) - Downforce*(Car.d - Car.a)/(2*Car.l));
+    g_force{end+1} = Fzfl - (Car.m*Car.g*Car.d/(2*Car.l) - Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) - Car.Droll*Car.m*(k1(6)/k1(1))*Car.h/(Car.Weq) - Downforce*(Car.d - Car.a)/(2*Car.l));
     lbg_force = [lbg_force; 0];
     ubg_force = [ubg_force; 0];
 
     % Front Right Wheel
-    g_force{end+1} = Fzfr - (Car.m*Car.g*Car.d/(2*Car.l) - Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) + Car.Droll*Car.m*(k1(6)/k1(1))*Car.h/(W_eq) - Downforce*(Car.d - Car.a)/(2*Car.l));
+    g_force{end+1} = Fzfr - (Car.m*Car.g*Car.d/(2*Car.l) - Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) + Car.Droll*Car.m*(k1(6)/k1(1))*Car.h/(Car.Weq) - Downforce*(Car.d - Car.a)/(2*Car.l));
     lbg_force = [lbg_force; 0];
     ubg_force = [ubg_force; 0];
 
     % Rear Left Wheel
-    g_force{end+1} = Fzrl - (Car.m*(Car.g/2)*(1 - (Car.d/Car.l)) + Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) - (1 - Car.Droll)*Car.m*(k1(6)/k1(1))*Car.h/(W_eq) - Downforce*(Car.l - Car.d + Car.a)/(2*Car.l));
+    g_force{end+1} = Fzrl - (Car.m*(Car.g/2)*(1 - (Car.d/Car.l)) + Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) - (1 - Car.Droll)*Car.m*(k1(6)/k1(1))*Car.h/(Car.Weq) - Downforce*(Car.l - Car.d + Car.a)/(2*Car.l));
     lbg_force = [lbg_force; 0];
     ubg_force = [ubg_force; 0];
 
     % Rear Right Wheel
-    g_force{end+1} = Fzrr - (Car.m*(Car.g/2)*(1 - (Car.d/Car.l)) + Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) + (1 - Car.Droll)*Car.m*(k1(6)/k1(1))*Car.h/(W_eq) - Downforce*(Car.l - Car.d + Car.a)/(2*Car.l));
+    g_force{end+1} = Fzrr - (Car.m*(Car.g/2)*(1 - (Car.d/Car.l)) + Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) + (1 - Car.Droll)*Car.m*(k1(6)/k1(1))*Car.h/(Car.Weq) - Downforce*(Car.l - Car.d + Car.a)/(2*Car.l));
     lbg_force = [lbg_force; 0];
     ubg_force = [ubg_force; 0];
 
     % Engine Power Constraint Definition
-    g_power{end+1} = Car.PeakPower - (U(2,k)*X(,k))
-    
+    g_power{end+1} = Car.PeakPower - time_scale/((force_scale*length_scale)*angle_scale)*(U(2,k)*X(7,k) + U(3,k)*X(8,k) + U(4,k)*X(9,k) + U(5,k)*X(10,k));
+    lbg_power = [lbg_power; -inf];
+    ubg_power = [ubg_power; 0];
 end
 
 %% Net Constraint Definition
-g = [vertcat(g_dynamics{:}); vertcat(g_time{:}); vertcat(g_force{:})];
-lbg = [lbg_dynamics; lbg_time; lbg_force];
-ubg = [ubg_dynamics; ubg_time; ubg_force];
+g = [vertcat(g_dynamics{:}); vertcat(g_time{:}); vertcat(g_force{:}); vertcat(g_power{:})];
+lbg = [lbg_dynamics; lbg_time; lbg_force; lbg_power];
+ubg = [ubg_dynamics; ubg_time; ubg_force; ubg_power];
 
 % Closed Loop Constraint
-g   = [g;X([2,5,6],end) - X([2,5,6],1)]; 
-lbg = [lbg; zeros(3,1)]; 
-ubg = [ubg; zeros(3,1)];
+g   = [g;X([2:n_states],end) - X([2:n_states],1)]; 
+lbg = [lbg; zeros(n_states-1,1)]; 
+ubg = [ubg; zeros(n_states-1,1)];
 end
