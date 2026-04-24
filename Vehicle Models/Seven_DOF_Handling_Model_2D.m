@@ -11,13 +11,20 @@ clear
 close all
 
 %% 7 DOF Plannar Vehicle Handling Model 
-function [N,n_states,u_states,ode] = Handling_Model(Car,track_data)
+function [N,n_states,u_states,f_dynamics] = Handling_Model(Car,track_data,N)
 import casadi.*
 
 %% Direct Multiple Shooting Method Inputs
-N = 2000;
-n_states = 10;
-u_states = 5;
+n_states = 10;                                                              % Number of States (Time, )
+u_states = 5;                                                               % Number of Control Inputs
+
+% Independent Variable
+lap_length = track_data(arc_s(end));                                        % Total length of the lap (m)
+s_grid = linspace(0,lap_length,N+1);                                        % Discretized Centerline Arc Length (m)
+ds = lap_length/N;                                                          % Track Centerline Arc Length Step (m)
+f_kappa = casadi.interpolant('f_kappa', 'bspline', {track_data.arc_s},track_data.Omega_z);
+f_nl = casadi.interpolant('f_nl', 'bspline', {track_data.arc_s},track_data.nl);
+f_nr = casadi.interpolant('f_nr', 'bspline', {track_data.arc_s},track_data.nr);
 
 X = SX.sym('X',n_states,N+1);
 U = SX.sym('U',u_states,N);
@@ -122,8 +129,8 @@ Fzfl = SX.sym('Fzfl');
 [Fxfl,Fyfl,Mzfl,p_trailfl] = combined_brsuh_model(u_fl,v_fl,Car.R,Car.w,Car.C_p,Car.kv,O_fl,alpha_fl,Fzfl,Car.mu0,Car.mu);
 
 %% ODE Definitio (Dynamics) 
-s_dot = (1/t_scale)*(sigma/(1 - n*curv))*(cos(xi) - (d/l)*sin(xi)*tan(gamma));
-n_N_dot = (n_scale/t_scale)*(sigma)*(sin(xi) + (d/l)*cos(xi)*tan(gamma));
+s_dot = (1/t_scale)*(sigma/(1 - n*curv))*(cos(xi) - (d/l)*sin(xi)*tan(delta));
+n_N_dot = (n_scale/t_scale)*(sigma)*(sin(xi) + (d/l)*cos(xi)*tan(delta));
 psi_N_dot = psi_dot_N;
 psi_ddot_N = (1/2)*(-2*Car.d*(Fyrl + Fyrr) + 2*(Md_fl + Md_fr + Md_rl + Md_rr) + (Fxrr - Fxrl)*Car.Wr + (2*(Car.d - Car.l)*(Fyfl + Fyfr) + (Fxfr - Fxfl)*Car.Wf)*cos(delta) + (2*(Car.d - Car.l)*(Fxfl + Fxfr) + (Fyfl - Fyfr)*Car.Wf)*sin(delta))/Car.Iz;
 u_N_dot = (Drag + (Fxrl + Fxrr + (Fxfl + Fxfr)*cos(delta)) - (Fyfr*sin(delta) + Fyfl*sin(delta)))/Car.m + v*psi_dot;
@@ -136,4 +143,79 @@ O_rr_N_dot = Md_rr_N/(force_scale*length_scale) - Crr*Frrz - Frrx*rrr;
 ODE = [1/s_dot; n_N_dot/s_dot; psi_N_dot/s_dot; psi_ddot_N/s_dot; u_N_dot/s_dot; v_N_dot/s_dot; O_fl_N_dot/s_dot; O_fr_N_dot/s_dot; O_rl_N_dot/s_dot; O_rr_N_dot/s_dot];
 f_dynamics = Function('f_dynamics',{X_sym,U_sym,s_sym},{ODE});
 
+%% Constraint Definition
+% Dynamics Constraints
+g_dynamics = {};
+lbg_dynamics = [];
+ubg_dynamics = [];
+
+% Time Constraints
+g_time = {};
+lbg_time = [];
+ubg_time = [];
+
+% Normal Force Constraints
+g_force = {};
+lbg_force = {};
+ubg_force = {};
+
+% Engine Power Definition
+g_power = {};
+lbg_power = [];
+ubg_power = [];
+
+% Main Loop
+for k = 1:N
+    k1 = f_dynamics(X(:,k),U(:,k), s_grid(k));
+    k2 = f_dynamics(X(:,k) + ds/2*k1, U(:,k), s_grid(k) + ds/2);
+    k3 = f_dynamics(X(:,k) + ds/2*k2, U(:,k), s_grid(k) + ds/2);
+    k4 = f_dynamics(X(:,k) + ds*k3,   U(:,k), s_grid(k+1));
+    x_next = X(:,k) + (ds/6)*(k1 + 2*k2 + 2*k3 + k4);
+   
+    % Time Constraint Definition (Time is forced to move ahead)
+    g_time{end+1} = x_next(1) - X(1,k);
+    lbg_time = [lbg_time; 1e-6];
+    ubg_time = [ubg_time; inf];
+
+    % Dynamics Constraint Definition
+    g_dynamics{end+1} = X(:,k+1) - x_next;
+    lbg_dynamics = [lbg_dynamics; zeros(n_states,1)];
+    ubg_dynamics = [ubg_dynamics; zeros(n_states,1)];
+
+    % Normal Force Constraint Definition
+    % Front Left Wheel
+    g_force{end+1} = Fzfl - (Car.m*Car.g*Car.d/(2*Car.l) - Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) - Car.Droll*Car.m*(k1(6)/k1(1))*Car.h/(Car.Weq) - Downforce*(Car.d - Car.a)/(2*Car.l));
+    lbg_force = [lbg_force; 0];
+    ubg_force = [ubg_force; 0];
+
+    % Front Right Wheel
+    g_force{end+1} = Fzfr - (Car.m*Car.g*Car.d/(2*Car.l) - Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) + Car.Droll*Car.m*(k1(6)/k1(1))*Car.h/(Car.Weq) - Downforce*(Car.d - Car.a)/(2*Car.l));
+    lbg_force = [lbg_force; 0];
+    ubg_force = [ubg_force; 0];
+
+    % Rear Left Wheel
+    g_force{end+1} = Fzrl - (Car.m*(Car.g/2)*(1 - (Car.d/Car.l)) + Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) - (1 - Car.Droll)*Car.m*(k1(6)/k1(1))*Car.h/(Car.Weq) - Downforce*(Car.l - Car.d + Car.a)/(2*Car.l));
+    lbg_force = [lbg_force; 0];
+    ubg_force = [ubg_force; 0];
+
+    % Rear Right Wheel
+    g_force{end+1} = Fzrr - (Car.m*(Car.g/2)*(1 - (Car.d/Car.l)) + Car.m*(k1(5)/k1(1))*Car.h/(2*Car.l) + (1 - Car.Droll)*Car.m*(k1(6)/k1(1))*Car.h/(Car.Weq) - Downforce*(Car.l - Car.d + Car.a)/(2*Car.l));
+    lbg_force = [lbg_force; 0];
+    ubg_force = [ubg_force; 0];
+
+    % Engine Power Constraint Definition
+    g_power{end+1} = Car.PeakPower - time_scale/((force_scale*length_scale)*angle_scale)*(U(2,k)*X(7,k) + U(3,k)*X(8,k) + U(4,k)*X(9,k) + U(5,k)*X(10,k));
+    lbg_power = [lbg_power; -inf];
+    ubg_power = [ubg_power; 0];
+end
+
+%% Net Constraint Definition
+g = [vertcat(g_dynamics{:}); vertcat(g_time{:}); vertcat(g_force{:}); vertcat(g_power{:})];
+lbg = [lbg_dynamics; lbg_time; lbg_force; lbg_power];
+ubg = [ubg_dynamics; ubg_time; ubg_force; ubg_power];
+
+% Closed Loop Constraint
+g   = [g;X([2:n_states],end) - X([2:n_states],1)]; 
+lbg = [lbg; zeros(n_states-1,1)]; 
+ubg = [ubg; zeros(n_states-1,1)];
 end

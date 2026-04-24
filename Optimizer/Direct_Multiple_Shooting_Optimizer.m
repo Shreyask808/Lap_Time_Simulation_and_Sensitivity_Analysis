@@ -15,17 +15,19 @@ close all
 if isequal(file1,0)
     disp('Select the Vehicle Data')
 else
-    location = fullfile(loc1,file1);
-    load(location);
-    fprintf('Loaded Vehicle Data: %s\n', location);
+    location_vehicle = fullfile(loc1,file1);
+    load(location_vehicle);
+    fprintf('Loaded Vehicle Data: %s\n', location_vehicle);
 end
 
 %% Load Track Model
-[file1,loc1] = uigetfile({'*.mat'}, 'Select the Vehicle Data');
-if isequal(file1,0)
-    disp('Select the Vehicle Data')
+[file2,loc2] = uigetfile({'*.mat'}, 'Select the Track Data');
+if isequal(file2,0)
+    disp('Select the Track Data')
 else
-    location = fullfile(loc1,file1);
-    load(location);
-    fprintf('Loaded Vehicle Data: %s\n', location);
+    location_track = fullfile(loc2,file2);
+    load(location_track);
+    fprintf('Loaded Vehicle Data: %s\n', location_track);
 end
+
+%% Optimizer Definition

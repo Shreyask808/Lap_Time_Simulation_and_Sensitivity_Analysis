@@ -10,6 +10,7 @@ Car.h = 0.3;                                                                % He
 Car.a = 0.5;                                                                % Distance between cg and cp along the centerline (m)
 Car.Wf = 2;                                                                 % Front Trackwidth (m)
 Car.Wr = 2;                                                                 % Rear TrackWidth (m)
+Car.Weq = (Car.Wf + Car.Wr)/2;                                              % Equivalent Track Width of the Car (m)   
 Car.Droll = 0.5;                                                            % Rolling Moment Distribution (.)
 Car.delta_max = 0.5;                                                        % Max steering angle (rad)
 Car.delta_min = -0.5;                                                       % Min steering angle (rad)
@@ -33,6 +34,7 @@ Car.Cp = 4e6;                                                               % Ti
 Car.mu0 = 0.9;                                                              % Static Friction Coefficient (.)
 Car.mu = 0.6;                                                               % Sliding Friction Coefficient (.)
 Car.kv = 1e6;                                                               % Vertical Stiffness of the Tire (N/m^2)
+Car.alpha_max = deg2rad(10);                                                % Maximum Slip Angle of the Tire (m)
 
 %% Vehicle Powertrain Limit
 Car.PeakPower = 450e3;                                                      % Vehicle Peak Power (W)
