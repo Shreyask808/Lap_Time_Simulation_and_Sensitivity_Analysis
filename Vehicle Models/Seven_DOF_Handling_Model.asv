@@ -92,6 +92,7 @@ alpha_fr = atan(v_fr/u_fr) + gamma;                                         % Sl
 %% Normal Forces Definition
 Downforce = -(1/2)*Car.Cl*Car.rho*Car.A*(u^2);
 
+Fzrr = m*Ca\
 
 %% Tire Forces
 % Rear Right Tire Forces

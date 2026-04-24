@@ -15,6 +15,7 @@ Car.delta_max = 0.5;                                                        % Ma
 Car.delta_min = -0.5;                                                       % Min steering angle (rad)
 Car.A = 1.5;                                                                % Frontal Area (m^2)
 Car.Cd = 0.22;                                                              % Vehicle Drag Coefficient (.)
+Car.Cl = -0.5;                                                              % Vehicle Drag Coefficient (.)
 
 %% Vehicle Mass and Inertia Properties
 Car.m = 660;                                                                % Vehicle Mass (kg)

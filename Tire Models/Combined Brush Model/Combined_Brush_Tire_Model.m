@@ -2,7 +2,7 @@ clc
 clear
 close all
 
-function [Fx,Fy,Mz] = combined_brsuh_model(u,v,P_in,R,w,C_p,kv,omega,alpha,Fz,mu_0,mu)
+function [Fx,Fy,Mz,p_trail] = combined_brsuh_model(u,v,R,w,C_p,kv,omega,alpha,Fz,mu_0,mu)
 import casadi.*
 % Effective Radius Calculation
 r = R - (Fz/kv);                                                            % Effective Raius of the Tire (m)
@@ -24,4 +24,5 @@ lambda = fmax(0,fmin(2*a,lambda));
 Fx = C_p*sigma_x*(lambda^2)/2 + (sigma_x/(sigma_norm + 1e-6))*mu*w*P_max*((4*a/3) - (lambda^2/a) + (lambda^3/(3*a^2)));                         % Lateral Force (N)
 Fy = C_p*sigma_y*(lambda^2)/2 + (sigma_y/(sigma_norm + 1e-6))*mu*w*P_max*((4*a/3) - (lambda^2/a) + (lambda^3/(3*a^2)));                         % Longitudinal Force (N)
 Mz = C_p*sigma_y*(((a*lambda^2)/2) - (lambda^3)/3) + (sigma_y/(sigma_norm + 1e-6))*mu*w*P_max*((lambda^3/a) - (lambda^4)/(4*a^2) - lambda^2);   % Aligning Moment (N.m)
+p_trail = -Mz/Fy;                                                           % Pneumatic Trail (m)
 end
