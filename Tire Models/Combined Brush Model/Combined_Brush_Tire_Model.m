@@ -2,11 +2,11 @@ clc
 clear
 close all
 
-function [Fx,Fy,Mz] = combined_brsuh_model(u,v,P_in,R,w,C_p,omega,alpha,Fz,mu_0,mu)
+function [Fx,Fy,Mz] = combined_brsuh_model(u,v,P_in,R,w,C_p,kv,omega,alpha,Fz,mu_0,mu)
 import casadi.*
 % Effective Radius Calculation
-a = Fz/(2*P_in*w);                                                          % Half of contact patch length (m)
-r = sqrt(R^2 - a^2);                                                        % Effective Radius of the Tire (m)
+r = R - (Fz/kv);                                                            % Effective Raius of the Tire (m)
+a = sqrt(R^2 - r^2);                                                        % Half the length of the contact patch (m)
 P_max = 3*Fz/(4*a*w);                                                       % Maximum Contact Pressure (Pa)
     
 % Slip Ratios

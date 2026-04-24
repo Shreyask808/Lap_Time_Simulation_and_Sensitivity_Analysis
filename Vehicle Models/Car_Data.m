@@ -29,9 +29,9 @@ Car.Irr = 50;                                                               % Re
 Car.R = 0.2;                                                                % Tire Radius (m)
 Car.w = 0.225;                                                              % Tire Width (m)
 Car.Cp = 4e6;                                                               % Tire Stiffness per unit length (N/m^2)
-Car.P_in = 3e6;                                                             % Internal Tire Pressure (Pa)
 Car.mu0 = 0.9;                                                              % Static Friction Coefficient (.)
 Car.mu = 0.6;                                                               % Sliding Friction Coefficient (.)
+Car.kv = 1e6;                                                               % Vertical Stiffness of the Tire (N/m^2)
 
 %% Vehicle Powertrain Limit
 Car.PeakPower = 450e3;                                                      % Vehicle Peak Power (W)
@@ -42,3 +42,4 @@ Car.rho = 1.2;                                                              % De
 Car.g = 9.81;                                                               % Gravitational Constant (m/s^2)
 
 save('VehicleData.mat', 'Car');
+disp('Vehicle Data saved successfully');
