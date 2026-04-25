@@ -6,11 +6,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-clc
-clear
-close all
-
-function [Fx,Fy,Mz,p_trail] = combined_brsuh_model(u,v,R,w,C_p,kv,omega,alpha,Fz,mu_0,mu)
+function [Fx,Fy,Mz,r] = Combined_Brush_Tire_Model(u,v,R,w,C_p,kv,omega,alpha,Fz,mu_0,mu)
 import casadi.*
 % Effective Radius Calculation
 r = R - (Fz/kv);                                                            % Effective Raius of the Tire (m)
