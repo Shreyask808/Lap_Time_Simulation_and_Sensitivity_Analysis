@@ -10,6 +10,8 @@ clc
 clear
 close all
 
+import casadi.*
+
 %% Load Vehicle Model
 [file1,loc1] = uigetfile({'*.mat'}, 'Select the Vehicle Data');
 if isequal(file1,0)
@@ -48,8 +50,11 @@ if isequal(file3, 0)
     error('No vehicle model file selected.');
 else
     addpath(loc3); 
-    [n_states,u_states,f_dynamics,g,lbg,ubg,lbx,ubx,x0,states,cost] = Seven_DOF_Handling_Model_2D(Car,track_data,N,loc4)
+    [n_states,u_states,g,lbg,ubg,lbx,ubx,x0,states,cost,time_scale] = Seven_DOF_Handling_Model_2D(Car,track_data,N,loc4);
     fprintf('Vehicle Model Path Added: %s\n', loc3);
+    lbg = vertcat(lbg{:});
+    ubg = vertcat(ubg{:});
+    x0 = vertcat(x0(:));
 end
 
 %% Optimizer Definition
@@ -63,4 +68,4 @@ sol = solver('x0', x0, 'lbx', lbx, 'ubx', ubx, 'lbg', lbg, 'ubg', ubg);
 full_sol = full(sol.x);
 X_opt = reshape(full_sol(1:n_states*(N+1)), n_states, N+1);
 U_opt = reshape(full_sol(n_states*(N+1)+1:end), u_states, N);
-fprintf('Optimal Lap Time: %.3f seconds\n', X_opt(1, end)/t_scale);
+fprintf('Optimal Lap Time: %.3f seconds\n', X_opt(1, end)/time_scale);
