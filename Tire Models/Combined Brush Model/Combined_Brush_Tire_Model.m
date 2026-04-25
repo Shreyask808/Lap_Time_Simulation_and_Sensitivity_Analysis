@@ -14,7 +14,7 @@ a = sqrt(R^2 - r^2);                                                        % Ha
 P_max = 3*Fz/(4*a*w);                                                       % Maximum Contact Pressure (Pa)
     
 % Slip Ratios
-kappa = (r*omega - u)/(u + 1e-6);
+kappa = (r*omega - u)/(u + 1);
 sigma_x = kappa/(1+kappa);                                                  % Longitudinal Theoretical Slip
 sigma_y = tan(alpha)/(1 + kappa);                                           % Lateral Theoretical Slip
 sigma = [sigma_x; sigma_y];                                                 % Net Slip Vector
