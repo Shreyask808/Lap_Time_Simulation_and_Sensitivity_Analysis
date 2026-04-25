@@ -35,7 +35,7 @@ Car.mu0 = 0.9;                                                              % St
 Car.mu = 0.6;                                                               % Sliding Friction Coefficient (.)
 Car.kv = 1e6;                                                               % Vertical Stiffness of the Tire (N/m^2)
 Car.alpha_max = deg2rad(10);                                                % Maximum Slip Angle of the Tire (m)
-
+Car.Crr = 0;                                                                % Rolling Resistance Coefficient (.)
 %% Vehicle Powertrain Limit
 Car.PeakPower = 450e3;                                                      % Vehicle Peak Power (W)
 Car.PeakTorque = 1000;                                                      % Vehicle Peak Torque (N.m)
