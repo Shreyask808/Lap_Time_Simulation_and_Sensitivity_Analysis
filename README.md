@@ -21,6 +21,7 @@ The lap time simulation framework includes a dynamic simulation of a vehicle aro
 4. <u>**Lap Time Optimizer**</u> - Combines the track, tire and vehicle model together along with an optimization strategy which could be online (in real time) which could be useful for autonomous driving considering a part of the track at once or offline which optimizes performance across entire track at once, useful for vehicle setup optimization. Strategies could include convex/Nonlinear Programming Numerical Optimization using gradient based solvers and/or interior point methods. Some of the readily available solvers include IPOPT (Interior Point OPTimization), SNOPT (Sparse Nonlinear OPTimizer) etc. <br>
 
 <img width="877" height="303" alt="image" src="https://github.com/user-attachments/assets/8b473e1e-1d27-4476-8f5c-3ce3dee69428" />
-**Source: [4] Jorge Segers, Analysis Techniques for Racecar Data Acquisition, 2nd ed., 2014.**
+**Source: [4] Jorge Segers, Analysis Techniques for Racecar Data Acquisition, 2nd ed., 2014.** <br>
+
 
 The framework is designed to be **modular**, allowing the user to plug in the track, vehicle and tire model of their choice to analyze and optimize vehicle performance for a given track. New track, tire and vehicle models can be added to the framework with minimal changes.
