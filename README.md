@@ -1,6 +1,6 @@
 # Lap Time Simulation and Sensitivity Analysis
 
-As a motorsports enthusiast and someone who is interested in vehicle modeling and controls, this is a project I am working on to try and learn. The framework is built upon established literature and references as mentioned below - 
+As a motorsports enthusiast and someone who is interested in vehicle modeling and controls, this is a project I am working on to try and learn. The framework is built upon established literature and references as mentioned below - <br>
 References - 
 
 **[1]** Giacomo Perantoni and David J.N. Limebeer, "Optimal Control of a Formula One Car on Three-Dimensional Track Part 1: Track Modelling and Identification". <br>
