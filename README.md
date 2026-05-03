@@ -8,6 +8,8 @@ References -
 **[3]** William F. Milliken & Douglas L. Milliken, Racecar Vehicle Dynamics, PA: SAE International, 1995.  <br>
 **[4]** Jorge Segers, Analysis Techniques for Racecar Data Aquisition, 2nd ed. Warrendale, PA: SAE International, 2014.  <br>
 
+** How's it Built - **
+
 The lap time simulation framework includes a dynamic simulation of a vehicle around a given racetrack and includes four main components:
 
 1. <u>**Track Model**</u> - A discrete ribbon model of a closed-loop track in Frenet coordinates, which provides the simulated vehicle with a path to follow. The model processes GPS coordinates (Latitude, Longitude, Height) of both right and left track boundaries to define the 3-dimensional ribbon. <br>
@@ -21,3 +23,4 @@ The lap time simulation framework includes a dynamic simulation of a vehicle aro
 <img width="877" height="303" alt="image" src="https://github.com/user-attachments/assets/8b473e1e-1d27-4476-8f5c-3ce3dee69428" />
 **Source: [4] Jorge Segers, Analysis Techniques for Racecar Data Acquisition, 2nd ed., 2014.**
 
+The framework is designed to be **modular**, allowing the user to plug in the track, vehicle and tire model of their choice to analyze and optimize vehicle performance for a given track. New track, tire and vehicle models can be added to the framework with minimal changes.
