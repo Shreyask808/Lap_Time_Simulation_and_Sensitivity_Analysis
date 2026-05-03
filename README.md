@@ -10,13 +10,13 @@ References -
 
 The lap time simulation framework includes a dynamic simulation of a vehicle around a given racetrack and includes four main components:
 
-1. **Track Model** - A discrete ribbon model of a closed-loop track in Frenet coordinates, which provides the simulated vehicle with a path to follow. The model processes GPS coordinates (Latitude, Longitude, Height) of both right and left track boundaries to define the 3-dimensional ribbon.
+1. <u>**Track Model**</u> - A discrete ribbon model of a closed-loop track in Frenet coordinates, which provides the simulated vehicle with a path to follow. The model processes GPS coordinates (Latitude, Longitude, Height) of both right and left track boundaries to define the 3-dimensional ribbon.
 
-2. **Tire Model** - A mathematical model of tire forces and moments that serves as the critical link between vehicle performance and the track surface.
+2. <u>**Tire Model**</u> - A mathematical model of tire forces and moments that serves as the critical link between vehicle performance and the track surface.
 
-3. **Vehicle Model** - A mathematical description of the vehicle dynamics. Inputs include vehicle data and a vehicle model of varying complexity.
+3. <u>**Vehicle Model**</u> - A mathematical description of the vehicle dynamics. Inputs include vehicle data and a vehicle model of varying complexity.
 
-4. **Lap Time Optimizer** - Combines the track, tire and vehicle model together along with an optimization strategy which could be online (in real time) which could be useful for autonomous driving considering a part of the track at once or offline which optimizes performance across entire track at once, useful for vehicle setup optimization. Strategies could include convex/Nonlinear Programming Numerical Optimization using gradient based solvers and/or interior point methods. Some of the readily available solvers include IPOPT (Interior Point OPTimization), SNOPT (Sparse Nonlinear OPTimizer) etc.
+4. <u>**Lap Time Optimizer**</u> - Combines the track, tire and vehicle model together along with an optimization strategy which could be online (in real time) which could be useful for autonomous driving considering a part of the track at once or offline which optimizes performance across entire track at once, useful for vehicle setup optimization. Strategies could include convex/Nonlinear Programming Numerical Optimization using gradient based solvers and/or interior point methods. Some of the readily available solvers include IPOPT (Interior Point OPTimization), SNOPT (Sparse Nonlinear OPTimizer) etc.
 
 <img width="877" height="303" alt="image" src="https://github.com/user-attachments/assets/8b473e1e-1d27-4476-8f5c-3ce3dee69428" />
 **Source: [4] Jorge Segers, Analysis Techniques for Racecar Data Acquisition, 2nd ed., 2014.**
