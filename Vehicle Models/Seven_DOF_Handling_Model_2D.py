@@ -19,7 +19,6 @@ import math
 import casadi as ca
 from casadi import *
 import matplotlib
-matplotlib.use('Qt5Agg') # Or 'TkAgg' if you don't have Qt installed
 matplotlib.use('Qt5Agg')
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
