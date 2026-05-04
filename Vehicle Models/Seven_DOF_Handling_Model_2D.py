@@ -175,6 +175,13 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name):
 # Cost Function & Constraint Definition
     # Cost Function
     cost = 0
+    
+    # Cost Function Weights
+    e0 = 1e-6
+    e1 = 1e-6
+    e2 = 1e-6
+    e3 = 1e-6
+    e4 = 1e-6
 
     # Dynamics Constraints
     g_dynamics = []
@@ -213,4 +220,13 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name):
         lbg_time.append(1e-6)
         ubg_time.append(np.inf)
 
-        
+        # Driving Power Constraint Definition
+        g_power.append(vehicle.peakpower - (1/(force_scale*speed_scale))*(state[6]*ctrl[1] + state[7]*ctrl[2] + state[8]*ctrl[3] + state[9]*ctrl[4]))
+        lbg_power.append(-inf)
+        ubg_power.append(0)
+
+        # Cost Function
+        dt = (state_next[0] - state[0])/time_scale
+        cost = cost + dt*(e0*ctrl[0]**2 + e1*ctrl[1]**2 + e2*ctrl[2]**2 + e3*ctrl[3]**2 + e4*ctrl[4]**2)
+
+    cost = cost + X[0,-1]/time_scale
