@@ -12,10 +12,17 @@ from types import SimpleNamespace
 import json
 import math
 from casadi import *
+
 os.system('cls' if os.name == 'nt' else 'clear')
 plt.close('all')
 
-def combined_brush_tire_model(u,R,w,Cp,kv,omega,alpha,Fz,mu0,mu):
+def combined_brush_tire_model(u,omega,alpha,Fz,vehicle):
+    mu = vehicle.mu
+    mu0 = vehicle.mu0
+    R = vehicle.R
+    w = vehicle.w
+    Cp = vehicle.Cp
+    kv = vehicle.kv
     # 1. Effective Radius Calculation
     r = R - (Fz/kv)
     a = sqrt(R**2 - r**2)
