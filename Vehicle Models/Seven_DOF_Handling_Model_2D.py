@@ -50,18 +50,18 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,loc4):
     print(f"Length of State Vector is :{states.numel()}")
 
 # System Definition
-    X_sym = SX.sym('X_sym',n_states)                                                        # Symbolic State Definition
-    U_sym = SX.sym('U_sym',u_states)                                                        # Symbolic Control Input Definition
-    s = SX.sym('s')                                                                         # Symbolic Centerline Arc Length Definition
+    X_sym = SX.sym('X_sym',n_states)                                                                            # Symbolic State Definition
+    U_sym = SX.sym('U_sym',u_states)                                                                            # Symbolic Control Input Definition
+    s = SX.sym('s')                                                                                             # Symbolic Centerline Arc Length Definition
     # Scaling - X_N [.] = X_scale [1/units]*X [units]
-    force_scale = 1/(vehicle.m*vehicle.g)                                                   # Force Scale in N^-1
-    length_scale = 1/vehicle.l                                                              # Length Scale in m^-1
-    time_scale = np.sqrt(vehicle.g/vehicle.l)                                               # Time Scale in sec^-1
-    speed_scale = 1/np.sqrt(vehicle.g*vehicle.l)                                            # Speed Scale in sec/m
-    angle_scale = 1                                                                         # Angle Scale in rad^-1
+    force_scale = 1/(vehicle.m*vehicle.g)                                                                       # Force Scale in N^-1
+    length_scale = 1/vehicle.l                                                                                  # Length Scale in m^-1
+    time_scale = np.sqrt(vehicle.g/vehicle.l)                                                                   # Time Scale in sec^-1
+    speed_scale = 1/np.sqrt(vehicle.g*vehicle.l)                                                                # Speed Scale in sec/m
+    angle_scale = 1                                                                                             # Angle Scale in rad^-1
 
     # Normalized States
-    t_N = X_sym[0]                                                                          # Normalized Time [.]
+    t_N = X_sym[0]                                                                                              # Normalized Time [.]
     n_N = X_sym[1]
     psi_N = X_sym[2]
     psi_dot_N = X_sym[3]
@@ -102,21 +102,35 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,loc4):
     Md_fr = Md_fr_N/(force_scale*length_scale)
     Md_rl = Md_rl_N/(force_scale*length_scale)
     Md_rr = Md_rr_N/(force_scale*length_scale)
+    Fzfl = Fzfl_N/force_scale
+    Fzfr = Fzfr_N/force_scale
+    Fzrl = Fzrl_N/force_scale
+    Fzrr = Fzrr_N/force_scale
 
+    # Symbolic Track Data
+    curv = f_kappa(s)
+    theta = f_theta(s)
+    xi = psi - theta
 
+    # Tire Contact Patch Velocities in Vehicle Frame
+    # Rear Right Tire
+    u_rr = u + (vehicle.Wr/2)*psi_dot
+    v_rr = v - (vehicle.d)*psi_dot
 
+    # Rear Left Tire
+    u_rl = u - (vehicle.Wr/2)*psi_dot
+    v_rl = v - (vehicle.d)*psi_dot
 
+    # Front Left Tire
+    u_fl = u - (vehicle.Wf/2)*psi_dot
+    v_fl = v - (vehicle.l - vehicle.d)*psi_dot
 
+    # Front Right Tire
+    u_fr = u + (vehicle.Wf/2)*psi_dot
+    v_fr = v - (vehicle.l - vehicle.d)*psi_dot
 
-
-
-
-    delta = delta_N/angle_scale;
-Md_fl = Md_fl_N/(length_scale*force_scale);
-Md_fr = Md_fr_N/(length_scale*force_scale);
-Md_rl = Md_rl_N/(length_scale*force_scale);
-Md_rr = Md_rr_N/(length_scale*force_scale);
-Fzfl = Fzfl_N/force_scale;
-Fzfr = Fzfr_N/force_scale;
-Fzrl = Fzrl_N/force_scale;
-Fzrr = Fzrr_N/force_scale;
+    # Tire Slip Angle Definition
+    alpha_rr = - ca.arctan(v_rr/u_rr)                                                                           # Rear Right Slip Angle in rad
+    alpha_rl = -ca.arctan(v_rl/u_rl)                                                                            # Rear Left Slip Angle in rad
+    alpha_fr = -ca.arctan((-u_fr*sin(delta) + v_fr*cos(delta))/(u_fr*cos(delta) + v_fr*sin(delta)))             # Front Right Slip Angle in rad
+    alpha_fl = -ca.arctan((-u_fl*sin(delta) + v_fl*cos(delta))/(u_fl*cos(delta) + v_fl*sin(delta)))             # Front Left Slip Angle in rad
