@@ -24,6 +24,7 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 os.system('cls' if os.name == 'nt' else 'clear')
 plt.close('all')
+from tire_model import combined_brush_tire_model
  
 def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,loc4):
 #=========================================================================================================================================================================================================================
@@ -134,3 +135,19 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,loc4):
     alpha_rl = -ca.arctan(v_rl/u_rl)                                                                            # Rear Left Slip Angle in rad
     alpha_fr = -ca.arctan((-u_fr*sin(delta) + v_fr*cos(delta))/(u_fr*cos(delta) + v_fr*sin(delta)))             # Front Right Slip Angle in rad
     alpha_fl = -ca.arctan((-u_fl*sin(delta) + v_fl*cos(delta))/(u_fl*cos(delta) + v_fl*sin(delta)))             # Front Left Slip Angle in rad
+
+    # Rear Right Tire Forces
+    Fxrr, Fyrr, Mzrr, rrr = combined_brush_tire_model(u_rr,vehicle.R,vehicle.w,vehicle.Cp,vehicle.kv,O_rr,alpha_rr,Fzrr,vehicle.mu0,vehicle.mu)
+
+    # Rear Left Tire Forces
+    Fxrl, Fyrl, Mzrl, rrl = combined_brush_tire_model(u_rl,vehicle.R,vehicle.w,vehicle.Cp,vehicle.kv,O_rl,alpha_rl,Fzrl,vehicle.mu0,vehicle.mu)
+
+    # Front Right Tire Forces
+    Fxfr, Fyfr, Mzfr, rfr = combined_brush_tire_model(u_fr,vehicle.R,vehicle.w,vehicle.Cp,vehicle.kv,O_fr,alpha_fr,Fzfr,vehicle.mu0,vehicle.mu)
+
+    # Front Left Tire Forces
+    Fxfl, Fyfl, Mzfl, rfl = combined_brush_tire_model(u_fl,vehicle.R,vehicle.w,vehicle.Cp,vehicle.kv,O_fl,alpha_fl,Fzfl,vehicle.mu0,vehicle.mu)
+
+    # ODE dynamics Definition
+    s_dot = (u*cos(xi) - v*sin(xi))/(1 - n*curv)
+    n_dot = 
