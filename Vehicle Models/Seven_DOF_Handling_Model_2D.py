@@ -21,7 +21,7 @@ from casadi import *
 import matplotlib
 matplotlib.use('Qt5Agg')
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
+sys.path.append(os.path.abspath('D:\Personal Projects\Lap_Time_Simulation_and_Sensitivity_Analysis\Tire Models'))
 from tire_models import get_tire_model
 os.system('cls' if os.name == 'nt' else 'clear')
 plt.close('all')
@@ -54,6 +54,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name):
     X_sym = SX.sym('X_sym',n_states)                                                                            # Symbolic State Definition
     U_sym = SX.sym('U_sym',u_states)                                                                            # Symbolic Control Input Definition
     s = SX.sym('s')                                                                                             # Symbolic Centerline Arc Length Definition
+
     # Scaling - X_N [.] = X_scale [1/units]*X [units]
     force_scale = 1/(vehicle.m*vehicle.g)                                                                       # Force Scale in N^-1
     length_scale = 1/vehicle.l                                                                                  # Length Scale in m^-1
@@ -158,7 +159,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name):
     Fxfl,Fyfl,Mzfl,rfl = tire_model(u_fl,O_fl,alpha_fl,Fzfl,vehicle)
 
     # Dynamics ODE Definition
-    s_dot = (1/length_scale)*(u*cos(xi) - v*cos(xi))/(1 - n*curv)
+    s_dot = (1/length_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv)
     n_N_dot = (length_scale/time_scale)*(u*sin(xi) + v*cos(xi))
     psi_N_dot = psi_dot_N
     psi_ddot_N = (angle_scale/(time_scale**2))*(1/2)*(-2*vehicle.d*(Fyrl + Fyrr) + 2*(Mzfl + Mzfr + Mzrl + Mzrr) + (Fxrr - Fxrl)*vehicle.Wr + (2*(vehicle.d - vehicle.l)*(Fyfl + Fyfr) + vehicle.Wf*(Fxfr - Fxfl))*cos(delta) + (2*(vehicle.d - vehicle.l)*(Fxfl+Fxfr) + vehicle.Wf*(Fyfl - Fyfr))*sin(delta))*(1/vehicle.Iz)
@@ -172,6 +173,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name):
     ODE = vertcat(1/s_dot, n_N_dot/s_dot, psi_N_dot/s_dot,psi_ddot_N/s_dot, u_N_dot/s_dot, v_N_dot/s_dot, O_fl_N_dot/s_dot, O_fr_N_dot/s_dot, O_rl_N_dot/s_dot, O_rr_N_dot/s_dot)
     f_dynamics = Function('f_dynamics',[X_sym,U_sym],[ODE])
 
+#==========================================================================================================================================================================================================================
 # Cost Function & Constraint Definition
     # Cost Function
     cost = 0
@@ -198,6 +200,17 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name):
     lbg_power = []
     ubg_power = []
 
+    # Vehicle Normal Force Constraints
+    g_force = []
+    lbg_force = []
+    ubg_force = []
+
+    A = vertcat(horzcat(1,1,1,1),horzcat(vehicle.Wf/2,-vehicle.Wf/2,vehicle.Wr/2,-vehicle.Wr/2),horzcat((vehicle.d-vehicle.l),(vehicle.d-vehicle.l),vehicle.d,vehicle.d),horzcat((1-vehicle.Droll),(vehicle.Droll-1),-vehicle.Droll,vehicle.Droll))
+    B1 = vehicle.m*vehicle.g - Downforce
+    B2 = -vehicle.h*(Fyrl + Fyrr + (Fyfl+Fyfr)*cos(delta) + (Fxfl+Fxfr)*sin(delta))
+    B3 = -vehicle.a*Downforce + vehicle.h*(Fxrl + Fxrr + (Fxfr + Fxfl)*cos(delta) - (Fyfl + Fyfr)*sin(delta))
+    B = vertcat(B1,B2,B3,0)
+
     # Nonlinear Programing Definition
     for k in range(N):
         state = X[:,k]
@@ -212,21 +225,117 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name):
 
         # Dynamics Constraint Definition
         g_dynamics.append(X[:,k+1] - state_next)
-        lbg_dynamics.append(np.zeros((n_states),1))
-        ubg_dynamics.append(np.zeros((n_states),1))
+        lbg_dynamics.append(np.zeros((n_states,1)))
+        ubg_dynamics.append(np.zeros((n_states,1)))
 
         # Time Constraint Definition (Time is forced to move ahead)
-        g_time.append(state_next[1] - state[1])
+        g_time.append(state_next[0] - state[0])
         lbg_time.append(1e-6)
         ubg_time.append(np.inf)
 
         # Driving Power Constraint Definition
         g_power.append(vehicle.peakpower - (1/(force_scale*speed_scale))*(state[6]*ctrl[1] + state[7]*ctrl[2] + state[8]*ctrl[3] + state[9]*ctrl[4]))
-        lbg_power.append(-inf)
+        lbg_power.append(-np.inf)
         ubg_power.append(0)
+
+        # Normal Force Constraints
+        force = (1/force_scale)*vertcat(ctrl[5],ctrl[6],ctrl[7],ctrl[8])
+        g_force.append(mtimes(A,force) - B)
+        lbg_force.append(np.zeros(4,1))
+        ubg_force.append(np.zeros(4,1))
 
         # Cost Function
         dt = (state_next[0] - state[0])/time_scale
         cost = cost + dt*(e0*ctrl[0]**2 + e1*ctrl[1]**2 + e2*ctrl[2]**2 + e3*ctrl[3]**2 + e4*ctrl[4]**2)
 
     cost = cost + X[0,-1]/time_scale
+
+    # Closed Loop Constraints
+    g_end = []
+    lbg_end = []
+    ubg_end = []
+
+    g_end.append(X[[1,3,4,5,6,7,8,9],-1] - X[[1,3,4,5,6,7,8,9],0])
+    lbg_end.append(np.zeros(8,1))
+    ubg_end.append(np.zeros(8,1))
+
+    g_end.append(X[2,-1] - X[2,0] - (track_data.theta[-1] - track_data.theta[0]))
+    lbg_end.append(0)
+    ubg_end.append(0)
+
+    g = vertcat(*g_dynamics, *g_time, *g_power, *g_force, *g_end)
+    lbg = vertcat(*lbg_dynamics, *lbg_time, *lbg_power, *lbg_force, *lbg_end)
+    ubg = vertcat(*ubg_dynamics, *ubg_time, *ubg_power, *ubg_force, *ubg_end)
+
+    #==========================================================================================================================================================================================================================
+    # States and Control Input Limits
+    lbx = np.full(states.shape, -np.inf)
+    ubx = np.full(states.shape, np.inf)
+
+    for r in range(N+1):
+        idx_t = r*n_states
+        idx_n = r*n_states + 1
+        idx_psi = r*n_states + 2
+        idx_u = r*n_states + 4
+        idx_O_fl = r*n_states + 6
+        idx_O_fr = r*n_states + 7
+        idx_O_rl = r*n_states + 8
+        idx_O_rr = r*n_states + 9
+
+        idx_delta = n_states*(N+1) + u_states*r
+        idx_Mdfl = n_states*(N+1) + u_states*r + 1
+        idx_Mdfr = n_states*(N+1) + u_states*r + 2
+        idx_Mdrl = n_states*(N+1) + u_states*r + 3
+        idx_Mdrr = n_states*(N+1) + u_states*r + 4
+        
+        if r == 0:
+            lbx[idx_t] = 0
+            ubx[idx_t] = 0
+
+            lbx[idx_psi] = f_theta(s_grid[r])*angle_scale
+            ubx[idx_psi] = f_theta(s_grid[r])*angle_scale
+        else:
+            lbx[idx_t] = 0
+            ubx[idx_t] = 200*time_scale
+
+            lbx[idx_psi] = (f_theta(s_grid[r]) - np.pi/2)*angle_scale
+            ubx[idx_psi] = (f_theta(s_grid[r]) + np.pi/2)*angle_scale
+            
+        lbx[idx_n] = f_nr(s_grid[r])*length_scale
+        ubx[idx_n] = f_nl(s_grid[r])*length_scale
+        
+        lbx[idx_u] = 5*speed_scale
+        ubx[idx_u] = vehicle.umax*speed_scale
+
+        lbx[idx_O_fl] = (5/vehicle.R)*(angle_scale/time_scale)
+        ubx[idx_O_fl] = (vehicle.umax/vehicle.R)*(angle_scale/time_scale)
+
+        lbx[idx_O_fr] = (5/vehicle.R)*(angle_scale/time_scale)
+        ubx[idx_O_fr] = (vehicle.umax/vehicle.R)*(angle_scale/time_scale)
+
+        lbx[idx_O_rl] = (5/vehicle.R)*(angle_scale/time_scale)
+        ubx[idx_O_rl] = (vehicle.umax/vehicle.R)*(angle_scale/time_scale)
+
+        lbx[idx_O_rr] = (5/vehicle.R)*(angle_scale/time_scale)
+        ubx[idx_O_rr] = (vehicle.umax/vehicle.R)*(angle_scale/time_scale)
+
+        lbx[idx_delta] = vehicle.delta_min*angle_scale
+        ubx[idx_delta] = vehicle.delta_max*angle_scale
+
+        lbx[idx_Mdfl] = vehicle.peakbrakingtorque*force_scale*length_scale
+        ubx[idx_Mdfl] = vehicle.peakdrivingtorque*force_scale*length_scale
+
+        lbx[idx_Mdfr] = vehicle.peakbrakingtorque*force_scale*length_scale
+        ubx[idx_Mdfr] = vehicle.peakdrivingtorque*force_scale*length_scale
+
+        lbx[idx_Mdrl] = vehicle.peakbrakingtorque*force_scale*length_scale
+        ubx[idx_Mdrl] = vehicle.peakdrivingtorque*force_scale*length_scale
+
+        lbx[idx_Mdrr] = vehicle.peakbrakingtorque*force_scale*length_scale
+        ubx[idx_Mdrr] = vehicle.peakdrivingtorque*force_scale*length_scale
+
+    #==========================================================================================================================================================================================================================
+    # Initial Guess
+    x0 = np.zeros(states.shape)
+
+    return states, cost, g, lbg, ubg, lbx, ubx, x0

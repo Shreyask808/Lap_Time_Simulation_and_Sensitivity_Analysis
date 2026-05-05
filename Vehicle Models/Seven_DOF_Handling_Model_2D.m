@@ -252,6 +252,7 @@ ubg = [ubg; zeros(n_states-1,1)];
 g = [g;X(3,end) - X(3,1) - 2*pi*angle_scale];
 lbg = [lbg;0];
 ubg = [ubg;0];
+
 %% Limits
 lbx = -inf(length_states,1);
 ubx = inf(length_states,1);
