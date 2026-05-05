@@ -58,12 +58,14 @@ vehicle.Crr = 0                                                             # Ti
 #====================================================================================================================================================================================================================
 # Vehicle Powertrain Limits
 vehicle.peakpower = 450e3                                                   # Vehicle peak power in W
-vehicle.peaktorque = 1000                                                   # Vehicle peak torque per tire in N.m
+vehicle.peakdrivingtorque = 1000                                            # Vehicle peak driving torque per tire in N.m
+vehicle.peakbrakingtorque = - 2000                                          # Vehicle peak braking torque per tire in N.m
 
 #=====================================================================================================================================================================================================================
 # Miscellaneous Data
 vehicle.rho = 1.2                                                           # Density of Air in kg/m^3
 vehicle.g = 9.81                                                            # Gravitational Constant in m/s^2
+vehicle.umax = 80                                                           # Maximum Longitudinal Velocity in m/s
 
 #=====================================================================================================================================================================================================================
 # Save Track Data

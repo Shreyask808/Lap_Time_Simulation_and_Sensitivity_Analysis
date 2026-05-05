@@ -27,7 +27,9 @@
     "alpha_max": 0.17453292519943295,
     "Crr": 0,
     "peakpower": 450000.0,
-    "peaktorque": 1000,
+    "peakdrivingtorque": 1000,
+    "peakbrakingtorque": -2000,
     "rho": 1.2,
-    "g": 9.81
+    "g": 9.81,
+    "umax": 80
 }
