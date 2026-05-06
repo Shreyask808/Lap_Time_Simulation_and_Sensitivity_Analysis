@@ -118,7 +118,6 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name):
     Drag = -(1/2)*vehicle.Cd*vehicle.rho*vehicle.A*(u**2)
     f_Drag = Function('f_Drag',[X_sym],[Drag])
     Downforce = -(1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(u**2)
-    f_Downforce = Function('f_Downforce',{X_sym},{Downforce})
     f_Downforce = Function('f_Downforce',[X_sym],[Downforce])
 
     # Tire Contact Patch Velocities in Vehicle Frame
