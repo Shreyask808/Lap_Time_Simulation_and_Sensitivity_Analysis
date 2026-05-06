@@ -116,9 +116,10 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name):
 
     # Aerodynamic Forces
     Drag = -(1/2)*vehicle.Cd*vehicle.rho*vehicle.A*(u**2)
-    f_Drag = Function('f_Drag',{X_sym},{Drag})
+    f_Drag = Function('f_Drag',[X_sym],[Drag])
     Downforce = -(1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(u**2)
     f_Downforce = Function('f_Downforce',{X_sym},{Downforce})
+    f_Downforce = Function('f_Downforce',[X_sym],[Downforce])
 
     # Tire Contact Patch Velocities in Vehicle Frame
     # Rear Right Tire
@@ -241,8 +242,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name):
         # Normal Force Constraints
         force = (1/force_scale)*vertcat(ctrl[5],ctrl[6],ctrl[7],ctrl[8])
         g_force.append(mtimes(A,force) - B)
-        lbg_force.append(np.zeros(4,1))
-        ubg_force.append(np.zeros(4,1))
+        lbg_force.append(np.zeros((4,1)))
+        ubg_force.append(np.zeros((4,1)))
 
         # Cost Function
         dt = (state_next[0] - state[0])/time_scale
@@ -256,8 +257,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name):
     ubg_end = []
 
     g_end.append(X[[1,3,4,5,6,7,8,9],-1] - X[[1,3,4,5,6,7,8,9],0])
-    lbg_end.append(np.zeros(8,1))
-    ubg_end.append(np.zeros(8,1))
+    lbg_end.append(np.zeros((8,1)))
+    ubg_end.append(np.zeros((8,1)))
 
     g_end.append(X[2,-1] - X[2,0] - (track_data.theta[-1] - track_data.theta[0]))
     lbg_end.append(0)
