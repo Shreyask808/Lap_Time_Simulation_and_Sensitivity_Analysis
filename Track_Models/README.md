@@ -26,7 +26,7 @@ This module takes raw GPS coordinates (latitude, longitude, altitude) of points 
 
 ## Ribbon Modeling
 
-Ribbons are centeral to road models and can be studied in terms of surfaces which in turn can be studied in terms of spines (curves) which may represent the centerline of the ribbon. A curve can be represented as : <br>
+Ribbons are central to road models and can be studied in terms of surfaces which in turn can be studied in terms of spines (curves) which may represent the centerline of the ribbon. A curve can be represented as : <br>
 <br>
 *C* = {**x**(s) = [x(s), y(s), z(s)]<sup>T</sup>} ∈ **R**<sup>3</sup>: s ∈ [s<sub>0</sub>, s<sub>f</sub>], with s being the arc length of *C*<br>
 <br>
@@ -51,7 +51,7 @@ For the complete mathematical derivation, refer to [1].
 
 ## Optimizer
 
-The track optimization is formulated as a Nonlinear ProBLEM (NLP) and solved using **IPOPT** (Interior Point OPTimizer) through the CasADi library. The continuous dynamics are discretized via **Direct Multiple Shooting** with 4th Order Runge-Kutta (RK4) integration across N uniformly spaced intervals along the track arc length, where N is user-defined. <br>
+The track optimization is formulated as a Nonlinear Problem (NLP) and solved using **IPOPT** (Interior Point OPTimizer) through the CasADi library. The continuous dynamics are discretized via **Direct Multiple Shooting** with 4th Order Runge-Kutta (RK4) integration across N uniformly spaced intervals along the track arc length, where N is user-defined. <br>
 **A higher N produces a smoother, more accurate track model at the cost of increased computation time.**
 
 ### Dynamics Definition
@@ -64,9 +64,9 @@ X(s) = [x(s), y(s), z(s), $\theta(s)$, $\mu(s)$, $\phi(s)$, $\dot{\theta}(s)$, $
 where $\theta$, $\mu$ and $\phi$ represent the euler angles describing elementary rotations about z-axis, y-axis and x-axis respectively. n<sub>l</sub>(s) and n<sub>r</sub>(s) represent the left- and right-hand track widths along s. <br>
 The ribbon dynamics is given by: <br>
 <br>
-$\ddot{X}$ = f(s,X,U) = $[\cos(\theta).\cos(\mu), \sin(\theta).\cos(\mu), -\sin(\mu), \dot{\theta}, \dot{\mu}, \dot{\phi}, \ddot{\theta}, \ddot{\mu}, \ddot{\phi}, \dot{n_l}, \dot{n_r}]^T$ <br>
+$\dot{X}$ = f(s,X,U) = $[\cos(\theta).\cos(\mu), \sin(\theta).\cos(\mu), -\sin(\mu), \dot{\theta}, \dot{\mu}, \dot{\phi}, \ddot{\theta}, \ddot{\mu}, \ddot{\phi}, \dot{n_l}, \dot{n_r}]^T$ <br>
 <br>
-where U = $[\ddot{\theta}, \ddot{\mu}, \ddot{\phi}, \dot{n_l}, \dot{n_r}]^T$ is the **control vector**. **The track dynamics $\ddot{X}$ = f(s,X,U) serves as an equality constraint for optimizer**.
+where U = $[\ddot{\theta}, \ddot{\mu}, \ddot{\phi}, \dot{n_l}, \dot{n_r}]^T$ is the **control vector**. **The track dynamics $\dot{X}$ = f(s,X,U) serves as an equality constraint for optimizer**.
 
 ### Cost Function Definition
 
@@ -74,13 +74,13 @@ The cost function **J(X,U)** is defined as: J(s,X,U) = $$\int_{s_0}^{s_f} l(X(s)
 <br>
 $H(s,X,U) = J(s,X,U) + \lambda^T.f(s,X,U)$<br>
 <br>
-with $\lambda$ are the lagrange multiplers. According to the Pontryagin's Minimum Principle, the optimal solution (X*, U*) for this track model NLP satisfy the following conditions: <br>
+with $\lambda$ are the lagrange multipliers. According to the Pontryagin's Minimum Principle, the optimal solution (X*, U*) for this track model NLP satisfy the following conditions: <br>
 <br>
 1. $\dot{X*} = \frac{\partial \mathcal{H}}{\partial \lambda}$
 2. $\dot{\lambda} = -\frac{\partial \mathcal{H}}{\partial X}$
 3. $\frac{\partial \mathcal{H}}{\partial U*} = 0$
 
-It is worth noting that Pontryagin's Minimum Principle provides the first-order necessary conditions for a continuous-time optimal control problem, which correspond to the KKT necessary conditions enforced by IPOPT in the discrete domain. When controls enter the Hamiltonian linearly, the optimal solution $U*$ has a possibility of exhibiting bang-bang controls or rapid oscilations between extreme control values. To correct this, a cost function which is quadratic in control inputs is defined. This method is called **Regularization**. <br>
+It is worth noting that Pontryagin's Minimum Principle provides the first-order necessary conditions for a continuous-time optimal control problem, which correspond to the KKT necessary conditions enforced by IPOPT in the discrete domain. When controls enter the Hamiltonian linearly, the optimal solution $U*$ has a possibility of exhibiting bang-bang controls or rapid oscillations between extreme control values. To correct this, a cost function which is quadratic in control inputs is defined. This method is called **Regularization**. <br>
 <br>
 The cost function consists of three terms, a tracking error term $(l_e)$, curvature rate term $(l_c)$ and a width rate term $(l_w)$. They are defined as: <br>
 <br>
