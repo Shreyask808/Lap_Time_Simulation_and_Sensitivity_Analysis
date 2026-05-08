@@ -8,9 +8,9 @@ The track model provides the simulated vehicle with a path to follow, defined by
 This module takes raw GPS coordinates (latitude, longitude, altitude) of points along the left and right track boundaries (recorded in the direction of travel) and passes them through an optimizer that simultaneously converts them into a Frenet-coordinate ribbon model and smooths the track geometry, producing continuous curves that represent the track boundaries with minimal boundary errors. The resulting model provides well-defined track curvatures (Normal, torsion, and geodesic), heading angles, track widths as a function of centerline arc length, suitable for use with vehicle and tire models in simulations.
 
 <p align="center">
-  <img src="Barcelona.png" alt="Circuit de Barcelona-Catalunya 3D Track Model" width="800"/>
+  <img src="Images/Barcelona.png" alt="Circuit de Barcelona-Catalunya 3D Track Model" width="800"/>
   <br>
-  <em>3D ribbon model of Circuit de Barcelona-Catalunya — raw GPS boundary data (dashed)</em>
+  <em>3D ribbon model of Circuit de Barcelona-Catalunya — raw GPS boundary data (dashed) vs optimized Frenet-frame model (solid)</em>
 </p>
 
 **Key Capabilities of the Module**
