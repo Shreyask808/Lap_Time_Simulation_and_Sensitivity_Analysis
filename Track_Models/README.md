@@ -54,8 +54,19 @@ For the complete mathematical derivation, refer to [1].
 The track optimization is formulated as a Nonlinear ProBLEM (NLP) and solved using **IPOPT** (Interior Point OPTimizer) through the CasADi library. The continuous dynamics are discretized via **Direct Multiple Shooting** with 4th Order Runge-Kutta (RK4) integration across N uniformly spaced intervals along the track arc length, where N is user-defined. <br>
 **A higher N produces a smoother, more accurate track model at the cost of increased computation time.**
 
-# Dynamics Definition
+### Dynamics Definition
 
+The state vector (X) in terms of centerline arc length (s) for the track model can be defined as: <br>
+<br>
+X(s) = [x(s), y(s), z(s), $\theta(s)$, $\mu(s)$, $\phi(s)$, $\dot{\theta}(s)$, $\dot{\mu}(s)$, $\dot{\phi}(s)$, n<sub>l</sub>(s), n<sub>r</sub>(s)]<sup>T</sup> <br>
+<br>
+
+where $\theta$, $\mu$ and $\phi$ represent the euler angles describing elementary rotations about z-axis, y-axis and x-axis respectively. n<sub>l</sub>(s) and n<sub>r</sub>(s) represent the left- and right-hand track widths along s. <br>
+The ribbon dynamics is given by: <br>
+<br>
+$\ddot{X}$ = f(s,X,U) = $[\cos(\theta).\cos(\mu), \sin(\theta).\cos(\mu), -\sin(\mu), \dot{\theta}, \dot{\mu}, \dot{\phi}, \ddot{\theta}, \ddot{\mu}, \ddot{\phi}, \dot{n_l}, \dot{n_r}]^T$ <br>
+<br>
+where U = $[\ddot{\theta}, \ddot{\mu}, \ddot{\phi}, \dot{n_l}, \dot{n_r}]^T$ is the **control vector**. **The track dynamics $\ddot{X}$ = f(s,X,U) serves as an equality constraint for optimizer**.
 
 # Installation & Dependencies <br>
 
