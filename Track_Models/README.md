@@ -14,10 +14,25 @@ This module takes raw GPS coordinates (latitude, longitude, altitude) of points 
 </p>
 
 **Key Capabilities of the Module**
-1. Converts raw GPS track boundary data into srutcutred Frenet coordinate track model
+1. Converts raw GPS track boundary data into srutcutred and closed Frenet coordinate track model
 2. Compatible with both **clockwise and anti-clockwise** track layouts
 3. Can be used to generate both, 2D and 3D track models
 4. Accepts left and right boundary data with **unequal number of points**, no resampling or preprocessing required
 5. Simultaneously optimizes and smoothens track geometry, producing continuous track curvatures
 6. Outputs include relative track curvatures (torsion, normal, geodesic), and track width as a function of arc length
 7. Compatible with vehicle dynamics and tire models for simulations
+
+# How it Works <br>
+
+Ribbons are centeral to road models and can be studied in terms of surfaces which in turn can be studied in terms of spines (curves) which may represent the centerline of the ribbon. A curve can be represented as : <br>
+<br>
+*C* = {**x**(s) = [x(s), y(s), z(s)]<sup>T</sup>} ∈ **R**<sup>3</sup>: s ∈ [s<sub>0</sub>,s<sub>f</sub>], with s being the arc length of *C*<br>
+<br>
+A moving coordinate frame is defined along the curve *C*, consisting of three orthonormal vectors that form a right-handed coordinate system. The tangent vector $\mathbf{t}(s) = \dot{\mathbf{x}}(s)$ points along the direction of travel, the principal normal $\mathbf{p}(s) = \dot{\mathbf{t}}/|\dot{\mathbf{t}}|$ points toward the center of curvature, and the binormal vector $\mathbf{b}(s) = \mathbf{t} \times \mathbf{p}$ is perpendicular to both. Together, these three vectors define the local Frenet frame at each point along the track centerline.
+
+
+# Installation & Dependencies <br>
+
+# Usage <br>
+
+# Outputs <br>
