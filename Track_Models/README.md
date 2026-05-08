@@ -51,6 +51,11 @@ For the complete mathematical derivation, refer to [1].
 
 ## Optimizer
 
+The track optimization is formulated as a Nonlinear ProBLEM (NLP) and solved using **IPOPT** (Interior Point OPTimizer) through the CasADi library. The continuous dynamics are discretized via **Direct Multiple Shooting** with 4th Order Runge-Kutta (RK4) integration across N uniformly spaced intervals along the track arc length, where N is user-defined. <br>
+**A higher N produces a smoother, more accurate track model at the cost of increased computation time.**
+
+# Dynamics Definition
+
 
 # Installation & Dependencies <br>
 
