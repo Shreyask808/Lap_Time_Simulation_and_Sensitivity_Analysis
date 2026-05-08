@@ -16,7 +16,8 @@ This module takes raw GPS coordinates (latitude, longitude, altitude) of points 
 **Key Capabilities of the Module**
 1. Converts raw GPS track boundary data into srutcutred Frenet coordinate track model
 2. Compatible with both **clockwise and anti-clockwise** track layouts
-3. Accepts left and right boundary data with **unequal number of points**, no resampling or preprocessing required
-4. Simultaneously optimizes and smoothens track geometry, producing continuous track curvatures
-5. Outputs include relative track curvatures (torsion, normal, geodesic), and track width as a function of arc length
-6. Compatible with vehicle dynamics and tire models for simulations
+3. Can be used to generate both, 2D and 3D track models
+4. Accepts left and right boundary data with **unequal number of points**, no resampling or preprocessing required
+5. Simultaneously optimizes and smoothens track geometry, producing continuous track curvatures
+6. Outputs include relative track curvatures (torsion, normal, geodesic), and track width as a function of arc length
+7. Compatible with vehicle dynamics and tire models for simulations
