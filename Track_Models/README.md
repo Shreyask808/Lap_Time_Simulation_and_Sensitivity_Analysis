@@ -24,11 +24,32 @@ This module takes raw GPS coordinates (latitude, longitude, altitude) of points 
 
 # How it Works <br>
 
+## Ribbon Modeling
+
 Ribbons are centeral to road models and can be studied in terms of surfaces which in turn can be studied in terms of spines (curves) which may represent the centerline of the ribbon. A curve can be represented as : <br>
 <br>
-*C* = {**x**(s) = [x(s), y(s), z(s)]<sup>T</sup>} ∈ **R**<sup>3</sup>: s ∈ [s<sub>0</sub>,s<sub>f</sub>], with s being the arc length of *C*<br>
+*C* = {**x**(s) = [x(s), y(s), z(s)]<sup>T</sup>} ∈ **R**<sup>3</sup>: s ∈ [s<sub>0</sub>, s<sub>f</sub>], with s being the arc length of *C*<br>
 <br>
 A moving coordinate frame is defined along the curve *C*, consisting of three orthonormal vectors that form a right-handed coordinate system. The tangent vector $\mathbf{t}(s) = \dot{\mathbf{x}}(s)$ points along the direction of travel, the principal normal $\mathbf{p}(s) = \dot{\mathbf{t}}/|\dot{\mathbf{t}}|$ points toward the center of curvature, and the binormal vector $\mathbf{b}(s) = \mathbf{t} \times \mathbf{p}$ is perpendicular to both. Together, these three vectors define the local Frenet frame at each point along the track centerline.
+
+A ribbon *R* is constructed along the curve *C* by introducing a unit camber vector $\mathbf{n}(s)$ that lies in the plane of the ribbon and is perpendicular to the tangent vector $\mathbf{t}(s)$. This defines a surface with both width and twist, represented as: <br>
+<br>
+$$R = \{\mathbf{r}(s,n) = \mathbf{x}(s) + n.\mathbf{n}(s)\} \in \mathbb{R}^3, \quad s \in [s_0, s_f], \quad n \in [n_l(s), n_r(s)]$$ <br>
+<br>
+where $s$ is the arc length along *C* and $n$ is the lateral offset within the ribbon plane. The limits $n_l(s)$ and $n_r(s)$ define the left and right track boundaries respectively at each point along the centerline. \mathbf{n} = 0 represents the curve *C*. The unit camber vector \mathbf{n}(s) can be described in terms of vector \mathbf{p}(s) and \mathbf{b}(s) and a twist angle γ(s) as: <br>
+<br>
+$$\mathbf{n}(s) = \mathbf{p}(s)\cos(\boldsymbol{\gamma}(s)) - \mathbf{b}(s)\sin(\boldsymbol{\gamma}(s))$$ <br>
+<br>
+A unit normal vector $\mathbf{m}(s) = \mathbf{t}(s) \times \mathbf{n}(s)$ is defined perpendicular to the ribbon surface, completing the right-handed coordinate system for the ribbon frame. The curvatures of the ribbon can be derived as: <br>
+<br>
+1. Relative Torsion: $\omega_x = \tau + \dot{\gamma}$
+2. Normal Curvature: $\omega_y = \kappa \sin(\gamma)$
+3. Geodesic Curvature: $\omega_z = \kappa \cos(\gamma)$
+<br>
+where κ and τ are the curvature and torsion of the curve C respectively.
+For the complete mathematical derivation, refer to [1].
+
+## Optimizer
 
 
 # Installation & Dependencies <br>
