@@ -68,6 +68,29 @@ $\ddot{X}$ = f(s,X,U) = $[\cos(\theta).\cos(\mu), \sin(\theta).\cos(\mu), -\sin(
 <br>
 where U = $[\ddot{\theta}, \ddot{\mu}, \ddot{\phi}, \dot{n_l}, \dot{n_r}]^T$ is the **control vector**. **The track dynamics $\ddot{X}$ = f(s,X,U) serves as an equality constraint for optimizer**.
 
+### Cost Function Definition
+
+The cost function **J(X,U)** is defined as: J(s,X,U) = $$\int_{s_0}^{s_f} l(X(s),U(s).ds + l_f(X(s_f))$$. As the track model is continuous in s (centerline arc length), a Hamiltonian for the NLP can be defined as: <br>
+<br>
+$H(s,X,U) = J(s,X,U) + \lambda^T.f(s,X,U)$<br>
+<br>
+with $\lambda$ are the lagrange multiplers. According to the Pontryagin's Minimum Principle, the optimal solution (X*, U*) for this track model NLP satisfy the following conditions: <br>
+<br>
+1. $\dot{X*} = \frac{\partial \mathcal{H}}{\partial \lambda}$
+2. $\dot{\lambda} = -\frac{\partial \mathcal{H}}{\partial X}$
+3. $\frac{\partial \mathcal{H}}{\partial U*} = 0$
+
+It is worth noting that Pontryagin's Minimum Principle provides the first-order necessary conditions for a continuous-time optimal control problem, which correspond to the KKT necessary conditions enforced by IPOPT in the discrete domain. When controls enter the Hamiltonian linearly, the optimal solution $U*$ has a possibility of exhibiting bang-bang controls or rapid oscilations between extreme control values. To correct this, a cost function which is quadratic in control inputs is defined. This method is called **Regularization**. <br>
+<br>
+The cost function consists of three terms, a tracking error term $(l_e)$, curvature rate term $(l_c)$ and a width rate term $(l_w)$. They are defined as: <br>
+<br>
+1. $l_e = w_c \|\mathbf{x} - \bar{\mathbf{c}}\|^2 + w_l \|\mathbf{b}_l - \bar{\mathbf{b}}_l\|^2 + w_r \|\mathbf{b}_r -\bar{\mathbf{b}}_r\|^2$
+2. $l_c = w_\theta \ddot{\theta}^2 + w_\mu \ddot{\mu}^2 + w_\phi \ddot{\phi}^2$
+3. $l_w = w_{nl} \dot{n}_l^2 + w_{nr} \dot{n}_r^2$
+4. $J(s,X,U) = l_e + l_c + l_w$
+
+where $\bar{\mathbf{b}}_l$, $\bar{\mathbf{b}}_r$ and $\bar{\mathbf{c}}$ are the left boundary, right boundary and centerline coordinates interpolated from raw GPS data. Weights $w_c, w_l, w_r, w_\theta, w_\mu, w_\phi, w_{nl}$ and $w_{nr}$ can be tuned to minimize boundary error while ensuring the track curvature outputs remain free of high frequency oscillations.
+
 # Installation & Dependencies <br>
 
 # Usage <br>
