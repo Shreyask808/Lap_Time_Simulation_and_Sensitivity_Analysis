@@ -91,6 +91,8 @@ The cost function consists of three terms, a tracking error term $(l_e)$, curvat
 
 where $\bar{\mathbf{b}}_l$, $\bar{\mathbf{b}}_r$ and $\bar{\mathbf{c}}$ are the left boundary, right boundary and centerline coordinates interpolated from raw GPS data. Weights $w_c, w_l, w_r, w_\theta, w_\mu, w_\phi, w_{nl}$ and $w_{nr}$ can be tuned to minimize boundary error while ensuring the track curvature outputs remain free of high frequency oscillations.
 
+### Constraints
+
 # Installation & Dependencies <br>
 
 # Usage <br>
