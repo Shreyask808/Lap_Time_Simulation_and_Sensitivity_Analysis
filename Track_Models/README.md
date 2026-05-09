@@ -49,6 +49,40 @@ A unit normal vector $\mathbf{m}(s) = \mathbf{t}(s) \times \mathbf{n}(s)$ is def
 where κ and τ are the curvature and torsion of the curve C respectively.
 For the complete mathematical derivation, refer to [1].
 
+## Raw GPS Data to Cartesian Coordinate Conversion
+
+The raw GPS coordinates (lattitude, longitude, altitude) for left and right boundaries are converted to a local cartesian coordinate system using the **WGS84 ellipsoidal Earth Model**. **The origin of the local frame is set at the midpoint between the first points of the left and right boundaries. <br>
+<br>
+$\mathbf{BL} = [lat_{bl}, lon_{bl}, alt_{bl}]^T$ - Left Boundary Coordinates <br>
+<br>
+$\mathbf{BR} = [lat_{br}, lon_{br}, alt_{br}]^T$ - Right Boundary Coordinates <br>
+<br>
+$$\mathbf{O} = \frac{\mathbf{BL}(0) + \mathbf{BR}(0)}{2}$$
+
+where $\mathbf{O}$ is the local Cartesian coordinate origin, $\mathbf{BL}(0)$ and 
+$\mathbf{BR}(0)$ are the first points of the left and right boundary respectively.
+<br>
+The conversion follows two steps:
+
+**1. GPS to ECEF (Earth-Centered, Earth-Fixed):**
+
+The GPS coordinates are first converted to ECEF coordinates using the WGS84 ellipsoid parameters, semi-major axis $a = 6378137$ m and flattening $f = 1/298.257223563$:
+
+$$N(\phi) = \frac{a}{\sqrt{1 - e^2\sin^2(\phi)}}$$
+
+where $e^2 = f(2-f)$ is the eccentricity squared and $\phi$ is the latitude.
+
+**2. ECEF to Local Cartesian (ENU Frame):**
+
+The ECEF coordinates are then rotated into a local East-North-Up (ENU) frame 
+centered at the origin using a rotation matrix defined by the origin's latitude 
+and longitude, producing the final $(x, y, z)$ Cartesian coordinates used by 
+the optimizer.
+
+Both left and right boundary coordinates are converted independently, and the 
+track centerline is estimated as the midpoint between the nearest corresponding 
+points on each boundary.
+
 ## Optimizer
 
 The track optimization is formulated as a Nonlinear Problem (NLP) and solved using **IPOPT** (Interior Point OPTimizer) through the CasADi library. The continuous dynamics are discretized via **Direct Multiple Shooting** with 4th Order Runge-Kutta (RK4) integration across N uniformly spaced intervals along the track arc length, where N is user-defined. <br>
