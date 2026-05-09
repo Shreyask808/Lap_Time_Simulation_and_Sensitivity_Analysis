@@ -603,23 +603,23 @@ fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
 
 # Yaw Angle Rate
 ax1.plot(track_data.arc_s, track_data.omega_z, color='black')
-ax1.set_ylabel('Track Yaw Rate [rad/sec]')
-ax1.set_title('Track Yaw Rate vs Centerline Arc Length')
+ax1.set_ylabel('Geodesic Curvature [rad/m]')
+ax1.set_title('Track Geodesic Curvature vs Centerline Arc Length')
 ax1.grid(True, alpha=0.3)
 ax1.axhline(0,color='red')
 
 # Pitch Angle Rate
 ax2.plot(track_data.arc_s, track_data.omega_y, color='black')
-ax2.set_ylabel('Track Pitch Rate [rad/sec]')
-ax2.set_title('Track Pitch Rate vs Centerline Arc Length')
+ax2.set_ylabel('Normal Curvature [rad/m]')
+ax2.set_title('Track Normal Curvature vs Centerline Arc Length')
 ax2.grid(True, alpha=0.3)
 ax2.axhline(0,color='red')
 
 # Roll Angle Rate
 ax3.plot(track_data.arc_s, track_data.omega_x, color='black')
-ax3.set_ylabel('Track Roll Rate [rad/sec]')
+ax3.set_ylabel('Relative Torsion [rad/m]')
 ax3.set_xlabel('Track Centerline Arc Length [m]')
-ax3.set_title('Track Roll Rate vs Centerline Arc Length')
+ax3.set_title('Track Relative Twist vs Centerline Arc Length')
 ax3.grid(True, alpha=0.3)
 ax3.axhline(0,color='red')
 
