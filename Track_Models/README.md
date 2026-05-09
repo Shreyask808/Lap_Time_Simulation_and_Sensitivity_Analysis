@@ -1,3 +1,6 @@
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
 # Track Model Optimization
 
 # Overview <br>
@@ -51,16 +54,15 @@ For the complete mathematical derivation, refer to [1].
 
 ## Raw GPS Data to Cartesian Coordinate Conversion
 
-The raw GPS coordinates (lattitude, longitude, altitude) for left and right boundaries are converted to a local cartesian coordinate system using the **WGS84 ellipsoidal Earth Model**. **The origin of the local frame is set at the midpoint between the first points of the left and right boundaries. <br>
+The raw GPS coordinates (lattitude, longitude, altitude) for left and right boundaries are converted to a local cartesian coordinate system using the **WGS84 ellipsoidal Earth Model**. **The origin of the local frame is set at the midpoint between the first points of the left and right boundaries.<br>
 <br>
-$\mathbf{BL} = [lat_{bl}, lon_{bl}, alt_{bl}]^T$ - Left Boundary Coordinates <br>
+$\mathbf{BL} = [\phi_{bl}, \lambda_{bl}, z_{bl}]^T$ - Left Boundary Coordinates <br>
 <br>
-$\mathbf{BR} = [lat_{br}, lon_{br}, alt_{br}]^T$ - Right Boundary Coordinates <br>
+$\mathbf{BR} = [\phi_{br}, \lambda_{br}, z_{br}]^T$ - Right Boundary Coordinates <br>
 <br>
 $$\mathbf{O} = \frac{\mathbf{BL}(0) + \mathbf{BR}(0)}{2}$$
 
-where $\mathbf{O}$ is the local Cartesian coordinate origin, $\mathbf{BL}(0)$ and 
-$\mathbf{BR}(0)$ are the first points of the left and right boundary respectively.
+where $\mathbf{O}$ is the local Cartesian coordinate origin, $\mathbf{BL}(0)$ and $\mathbf{BR}(0)$ are the first points of the left and right boundary respectively. $\phi$ and $\lambda$ are the lattitude and longitude respectively. 
 <br>
 The conversion follows two steps:
 
@@ -74,14 +76,16 @@ where $e^2 = f(2-f)$ is the eccentricity squared and $\phi$ is the latitude.
 
 **2. ECEF to Local Cartesian (ENU Frame):**
 
-The ECEF coordinates are then rotated into a local East-North-Up (ENU) frame 
-centered at the origin using a rotation matrix defined by the origin's latitude 
-and longitude, producing the final $(x, y, z)$ Cartesian coordinates used by 
-the optimizer.
-
-Both left and right boundary coordinates are converted independently, and the 
-track centerline is estimated as the midpoint between the nearest corresponding 
-points on each boundary.
+The ECEF coordinates are then rotated into a local East-North-Up (ENU) frame centered at the origin using a rotation matrix defined by the origin's latitude and longitude, producing the final $(x, y, z)$ Cartesian coordinates used by the optimizer. The rotation Matrix is given by: <br>
+<br>
+<p align="center">
+<img src="https://latex.codecogs.com/svg.image?\color{white}R=\begin{bmatrix}-\sin\lambda&\cos\lambda&0\\-\sin\phi\cos\lambda&-\sin\phi\sin\lambda&\cos\phi\\\cos\phi\cos\lambda&\cos\phi\sin\lambda&\sin\phi\end{bmatrix}" alt="Rotation Matrix"/>
+</p>
+<br>
+Both left and right boundary coordinates are converted independently, and the track centerline is estimated as the midpoint between the nearest corresponding points on each boundary.<br>
+<br>
+The right boundary coordinates are given by:<br>
+$$x_{br}$$
 
 ## Optimizer
 
