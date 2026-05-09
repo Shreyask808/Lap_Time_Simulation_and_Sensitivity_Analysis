@@ -44,9 +44,9 @@ root = tk.Tk()
 root.withdraw()
 root.attributes('-topmost',True)
 
-file_path1 = filedialog.askopenfilename(title="Select the Right Boundary Data",filetypes=[("text files","*.txt"),("CSV files","*.csv")])
+file_path1 = filedialog.askopenfilename(title="Select the Right Boundary Data",filetypes=[("csv files","*.csv"),("text files","*.txt")])
 if file_path1:
-    right_data = np.genfromtxt(file_path1,skip_header=2)
+    right_data = np.genfromtxt(file_path1,skip_header=1,delimiter=',')
     right = SimpleNamespace()
     right.lat = ndimage.gaussian_filter1d(right_data[:,0]*np.pi/180, sigma=2.5)
     right.lon = ndimage.gaussian_filter1d(right_data[:,1]*np.pi/180, sigma=2.5)
@@ -65,9 +65,9 @@ root = tk.Tk()
 root.withdraw()
 root.attributes('-topmost',True)
 
-file_path2 = filedialog.askopenfilename(title="Select the Left Boundary Data",filetypes=[("text files","*.txt"),("CSV files","*.csv")])
+file_path2 = filedialog.askopenfilename(title="Select the Left Boundary Data",filetypes=[("csv files","*.csv"),("text files","*.txt")])
 if file_path2:
-    left_data = np.genfromtxt(file_path2,skip_header=2)
+    left_data = np.genfromtxt(file_path2,skip_header=1,delimiter=',')
     left = SimpleNamespace()
     left.lat = ndimage.gaussian_filter1d(left_data[:,0]*np.pi/180, sigma=2.5)
     left.lon = ndimage.gaussian_filter1d(left_data[:,1]*np.pi/180, sigma=2.5)
@@ -150,7 +150,9 @@ for i in range(coord2.shape[1]):
     new_coord[:,i] = coord1[:,idx_min]
 
 print(f"Shape of centerline.coord: {centerline.coord.shape}")
-
+print(f"Shape of coord1: {coord1.shape}")
+print(f"Shape of coord2: {coord2.shape}")
+print(f"Shape of new coord: {new_coord.shape}")
 #=====================================================================================================================================================================================================================
 # Centerline Arc Length Estimation
 arc_s = np.zeros(coord2.shape[1])
@@ -460,6 +462,28 @@ with open(full_save_path, 'wb') as f:
 print(f"Track data successfully saved to: {full_save_path}")
 
 #=====================================================================================================================================================================================================================
+# Boundary Error Estimation
+# Interpolated Raw Coordinates
+coord2_x = np.interp(track_data.arc_s,arc_s,coord2[0,:])
+coord2_y = np.interp(track_data.arc_s,arc_s,coord2[1,:])
+coord2_z = np.interp(track_data.arc_s,arc_s,coord2[2,:])
+
+new_coord_x = np.interp(track_data.arc_s,arc_s,new_coord[0,:])
+new_coord_y = np.interp(track_data.arc_s,arc_s,new_coord[1,:])
+new_coord_z = np.interp(track_data.arc_s,arc_s,new_coord[2,:])
+
+boundary_error_l = np.zeros(len(coord2_x))
+boundary_error_r = np.zeros(len(coord2_x))
+
+for x in range(len(track_data.arc_s)):
+    if len(right.lat) >= len(left.lat):
+        boundary_error_l[x] = np.sqrt((coord2_x[x] - track_data.bl[0,x])**2 + (coord2_y[x] - track_data.bl[1,x])**2 + (coord2_z[x] - track_data.bl[2,x])**2)
+        boundary_error_r[x] = np.sqrt((new_coord_x[x] - track_data.br[0,x])**2 + (new_coord_y[x] - track_data.br[1,x])**2 + (new_coord_z[x] - track_data.br[2,x])**2)
+    else:
+        boundary_error_l[x] = np.sqrt((new_coord_x[x] - track_data.bl[0,x])**2 + (new_coord_y[x] - track_data.bl[1,x])**2 + (new_coord_z[x] - track_data.bl[2,x])**2)
+        boundary_error_r[x] = np.sqrt((coord2_x[x] - track_data.br[0,x])**2 + (coord2_y[x] - track_data.br[1,x])**2 + (coord2_z[x] - track_data.br[2,x])**2)
+
+#=====================================================================================================================================================================================================================
 # Results and Plots
 # Track Map
 fig = go.Figure()
@@ -523,7 +547,7 @@ fig.update_layout(
 )
 fig.show()
 
-plt.figure(1)
+# Figure 1
 # Euler Angles
 fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
 
@@ -553,7 +577,7 @@ ax3.grid(True,alpha=0.3)
 plt.tight_layout()
 plt.show()
 
-plt.figure(2)
+# Figure 2
 # Track Half Widths
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
 
@@ -573,7 +597,7 @@ ax2.axhline(nr_0,color='red')
 plt.tight_layout()
 plt.show()
 
-plt.figure(3)
+# Figure 3
 # Euler Angle Angular Velocities
 fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
 
@@ -602,5 +626,18 @@ ax3.axhline(0,color='red')
 plt.tight_layout()
 plt.show()
 
+# Figure 4
+# Left and Right Boundary Errors
+fig, ax1 = plt.subplots(figsize=(10,6))
+ax1.plot(track_data.arc_s, boundary_error_l, label = 'Left Boundary Error',color='black')
+ax1.plot(track_data.arc_s, boundary_error_r, label = 'Right Boundary Error',color='red')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Track Boundary Error [m]')
+ax1.set_title('Boundary Error in Track Optimization')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='red')
+
+plt.tight_layout()
+plt.show()
 ## End
 #===================================================================================================================================================================================================================
