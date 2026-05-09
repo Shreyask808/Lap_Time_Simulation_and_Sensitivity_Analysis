@@ -48,9 +48,9 @@ file_path1 = filedialog.askopenfilename(title="Select the Right Boundary Data",f
 if file_path1:
     right_data = np.genfromtxt(file_path1,skip_header=1,delimiter=',')
     right = SimpleNamespace()
-    right.lat = ndimage.gaussian_filter1d(right_data[:,0]*np.pi/180, sigma=2.5)
-    right.lon = ndimage.gaussian_filter1d(right_data[:,1]*np.pi/180, sigma=2.5)
-    right.height = ndimage.gaussian_filter1d(right_data[:,2], sigma=2.5)
+    right.lat = ndimage.gaussian_filter1d(right_data[:,0]*np.pi/180, sigma=5)
+    right.lon = ndimage.gaussian_filter1d(right_data[:,1]*np.pi/180, sigma=5)
+    right.height = ndimage.gaussian_filter1d(right_data[:,2], sigma=5)
     num_points_r = len(right.lat)
     Xr = np.zeros(num_points_r)
     Yr = np.zeros(num_points_r)
@@ -69,9 +69,9 @@ file_path2 = filedialog.askopenfilename(title="Select the Left Boundary Data",fi
 if file_path2:
     left_data = np.genfromtxt(file_path2,skip_header=1,delimiter=',')
     left = SimpleNamespace()
-    left.lat = ndimage.gaussian_filter1d(left_data[:,0]*np.pi/180, sigma=2.5)
-    left.lon = ndimage.gaussian_filter1d(left_data[:,1]*np.pi/180, sigma=2.5)
-    left.height = ndimage.gaussian_filter1d(left_data[:,2], sigma=2.5)
+    left.lat = ndimage.gaussian_filter1d(left_data[:,0]*np.pi/180, sigma=5)
+    left.lon = ndimage.gaussian_filter1d(left_data[:,1]*np.pi/180, sigma=5)
+    left.height = ndimage.gaussian_filter1d(left_data[:,2], sigma=5)
     num_points_l = len(left.lat)
     Xl = np.zeros(num_points_l)
     Yl = np.zeros(num_points_l)
@@ -579,23 +579,24 @@ plt.show()
 
 # Figure 2
 # Track Half Widths
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
-
+fig, ax1 = plt.subplots(figsize=(10,6))
 # Left Half Track Width
-ax1.plot(track_data.arc_s,track_data.nl,color='black')
+ax1.plot(track_data.arc_s,track_data.nl,color='red',label='Left Half Track Width')
 ax1.set_xlabel('Track Centerline Arc Length [m]')
 ax1.set_ylabel('Track Left Half Width (n_l) [m]')
 ax1.grid(True,alpha=0.3)
-ax1.axhline(nl_0,color='red')
+ax1.axhline(nl_0,color='blue')
 
 # Right Half Track Width
-ax2.plot(track_data.arc_s,track_data.nr,color='black')
-ax2.set_xlabel('Track Centerline Arc Length [m]')
-ax2.set_ylabel('Track Right Half Width (n_r) [m]')
-ax2.grid(True,alpha=0.3)
-ax2.axhline(nr_0,color='red')
+ax1.plot(track_data.arc_s,track_data.nr,color='black',label='Right Half Track Width')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Track Right Half Width (n_r) [m]')
+ax1.grid(True,alpha=0.3)
+ax1.axhline(nr_0,color='blue')
+ax1.legend()
 plt.tight_layout()
 plt.show()
+
 
 # Figure 3
 # Euler Angle Angular Velocities
