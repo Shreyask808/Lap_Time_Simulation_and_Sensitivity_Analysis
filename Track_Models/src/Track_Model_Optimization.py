@@ -50,7 +50,7 @@ if file_path1:
     right = SimpleNamespace()
     right.lat = ndimage.gaussian_filter1d(right_data[:,0]*np.pi/180, sigma=2.5)
     right.lon = ndimage.gaussian_filter1d(right_data[:,1]*np.pi/180, sigma=2.5)
-    right.height = ndimage.gaussian_filter1d(right_data[:,2], sigma=10)
+    right.height = ndimage.gaussian_filter1d(right_data[:,2], sigma=2.5)
     num_points_r = len(right.lat)
     Xr = np.zeros(num_points_r)
     Yr = np.zeros(num_points_r)
@@ -177,7 +177,7 @@ w_r = w_c
 
 # Track Euler Angle Weights
 w_theta = 3e3
-w_mu = 1e10
+w_mu = 1e9
 w_phi = w_mu
 
 # Track Width Weights
@@ -444,7 +444,7 @@ track_data.omega_x = track_data.phi_dot -track_data.theta_dot*np.sin(track_data.
 track_data.omega_y = np.zeros(track_data.theta.shape)
 track_data.omega_y = track_data.theta_dot*np.cos(track_data.mu)*np.sin(track_data.phi) + track_data.mu_dot*np.cos(track_data.phi)
 
-# Track Yaw Rate
+# Track Yaw Rate (+ve for Left Turns and -ve for Right Turns)
 track_data.omega_z = np.zeros(track_data.theta.shape)
 track_data.omega_z = track_data.theta_dot*np.cos(track_data.mu)*np.cos(track_data.phi) - track_data.mu_dot*np.sin(track_data.phi)
 
@@ -475,13 +475,13 @@ new_coord_z = np.interp(track_data.arc_s,arc_s,new_coord[2,:])
 boundary_error_l = np.zeros(len(coord2_x))
 boundary_error_r = np.zeros(len(coord2_x))
 
-for x in range(len(track_data.arc_s)):
+for p in range(len(track_data.arc_s)):
     if len(right.lat) >= len(left.lat):
-        boundary_error_l[x] = np.sqrt((coord2_x[x] - track_data.bl[0,x])**2 + (coord2_y[x] - track_data.bl[1,x])**2 + (coord2_z[x] - track_data.bl[2,x])**2)
-        boundary_error_r[x] = np.sqrt((new_coord_x[x] - track_data.br[0,x])**2 + (new_coord_y[x] - track_data.br[1,x])**2 + (new_coord_z[x] - track_data.br[2,x])**2)
+        boundary_error_l[p] = np.sqrt((coord2_x[p] - track_data.bl[0,p])**2 + (coord2_y[p] - track_data.bl[1,p])**2 + (coord2_z[p] - track_data.bl[2,p])**2)
+        boundary_error_r[p] = np.sqrt((new_coord_x[p] - track_data.br[0,p])**2 + (new_coord_y[p] - track_data.br[1,p])**2 + (new_coord_z[p] - track_data.br[2,p])**2)
     else:
-        boundary_error_l[x] = np.sqrt((new_coord_x[x] - track_data.bl[0,x])**2 + (new_coord_y[x] - track_data.bl[1,x])**2 + (new_coord_z[x] - track_data.bl[2,x])**2)
-        boundary_error_r[x] = np.sqrt((coord2_x[x] - track_data.br[0,x])**2 + (coord2_y[x] - track_data.br[1,x])**2 + (coord2_z[x] - track_data.br[2,x])**2)
+        boundary_error_l[p] = np.sqrt((new_coord_x[p] - track_data.bl[0,p])**2 + (new_coord_y[p] - track_data.bl[1,p])**2 + (new_coord_z[p] - track_data.bl[2,p])**2)
+        boundary_error_r[p] = np.sqrt((coord2_x[p] - track_data.br[0,p])**2 + (coord2_y[p] - track_data.br[1,p])**2 + (coord2_z[p] - track_data.br[2,p])**2)
 
 #=====================================================================================================================================================================================================================
 # Results and Plots
