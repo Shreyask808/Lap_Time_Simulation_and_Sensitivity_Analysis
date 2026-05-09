@@ -583,16 +583,11 @@ fig, ax1 = plt.subplots(figsize=(10,6))
 # Left Half Track Width
 ax1.plot(track_data.arc_s,track_data.nl,color='red',label='Left Half Track Width')
 ax1.set_xlabel('Track Centerline Arc Length [m]')
-ax1.set_ylabel('Track Left Half Width (n_l) [m]')
 ax1.grid(True,alpha=0.3)
-ax1.axhline(nl_0,color='blue')
-
 # Right Half Track Width
 ax1.plot(track_data.arc_s,track_data.nr,color='black',label='Right Half Track Width')
-ax1.set_xlabel('Track Centerline Arc Length [m]')
-ax1.set_ylabel('Track Right Half Width (n_r) [m]')
-ax1.grid(True,alpha=0.3)
-ax1.axhline(nr_0,color='blue')
+ax1.set_ylabel('Track Width [m]')
+ax1.axhline(0,color='blue')
 ax1.legend()
 plt.tight_layout()
 plt.show()
