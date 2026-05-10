@@ -1,6 +1,3 @@
-<script type="text/javascript" async
-  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
-</script>
 # Track Model Optimization
 
 # Overview <br>
@@ -130,6 +127,35 @@ The cost function consists of three terms, a tracking error term $(l_e)$, curvat
 where $\bar{\mathbf{b}}_l$, $\bar{\mathbf{b}}_r$ and $\bar{\mathbf{c}}$ are the left boundary, right boundary and centerline coordinates interpolated from raw GPS data. Weights $w_c, w_l, w_r, w_\theta, w_\mu, w_\phi, w_{nl}$ and $w_{nr}$ can be tuned to minimize boundary error while ensuring the track curvature outputs remain free of high frequency oscillations.
 
 ### Constraints
+
+#### Dynamics Constraints
+
+The continuous track dynamics $(\dot{X} = f(s,X,U))$, defined in the preceing sections are enforced as equality constraints across all N discretized nodes in the nonlinear optimal control problem. To numerically integrate the dynamics over the arc length domain (s), a 4th-order Range-Kutta scheme is employed at each segment, yielding:<br>
+<br>
+$X_{k+1} = X_k + \frac{\Delta s}{6}.[f_1 + 2f_2 + 2f_3 + f_4]$<br>
+<br>
+where $f_1, f_2, f_3, f_4$ are defined as:<br>
+<br>
+$f_1 = f(X_k, U_k)$<br>
+$f_2 = f(X_k + \frac{\Delta s}{2}.f_1, U_k)$<br>
+$f_3 = f(X_k + \frac{\Delta s}{2}.f_2, U_k)$<br>
+$f_4 = f(X_k + \Delta s.f_3, U_k)$<br>
+<br>
+#### Periodicity Constraint (Lap Closure)
+
+As the track represnts a closed circuit, the terminal state at the end of the lap ($X(s = s_{lap})$) must match the initial state ($X(s = 0)$). This is enforced as an equality constraint across all states in the optimal control problem, with the exception of the yaw angle $\theta$. The  periodicty constraints are as follows:<br>
+<br>
+$X_i(s = s_{\text{lap}}) = X_i(s = 0), \quad \forall\ i \in \{x, y, z, \mu, \phi, \dot{\theta}, \dot{\mu}, \dot{\phi}, n_l, n_r\}$<br>
+<br>
+The yaw angle is treated as a special case, as it accumulates a full $2\pi$ rotation over a complete lap. The yaw angle increases or decreases throughout the lap depending on the track orientation. Following the standard sign convention, where $\theta$ is positive for anti-clockwise and negative for clockwise rotation, the periodicity constraint for $\theta$ is as follows:<br>
+<br>
+$$\theta(s = s_{\text{lap}}) - \theta(s = 0) = -2\pi \quad \text{(clockwise)}$$<br>
+<br>
+$$\theta(s = s_{\text{lap}}) - \theta(s = 0) = +2\pi \quad \text{(anti-clockwise)}$$<br>
+<br>
+All constraints in the optimal controll problem are defined in CasADi using three vectors:<br>
+<br>
+$$\mathbf{g} = \left[\begin{array}{c} X_{k+1} - \left(X_k + \frac{\Delta s}{6}[f_1 + 2f_2 + 2f_3 + f_4]\right) \\[6pt] X_i(s = s_{\text{lap}}) - X_i(s = 0) \\[6pt] \theta(s = s_{\text{lap}}) - \theta(s = 0) \mp 2\pi \end{array}\right] = \mathbf{0}$$
 
 # Installation & Dependencies <br>
 
