@@ -57,7 +57,8 @@ vehicle.Crr = 0                                                             # Ti
 
 #====================================================================================================================================================================================================================
 # Vehicle Powertrain Limits
-vehicle.peakpower = 450e3                                                   # Vehicle peak power in W
+vehicle.peakdrivingpower = 450e3                                            # Vehicle peak power in W
+vehicle.peakbrakingpower = -900e3                                           # Vehicle peak power in W
 vehicle.peakdrivingtorque = 1000                                            # Vehicle peak driving torque per tire in N.m
 vehicle.peakbrakingtorque = - 2000                                          # Vehicle peak braking torque per tire in N.m
 
