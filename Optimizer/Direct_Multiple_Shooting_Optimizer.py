@@ -158,9 +158,9 @@ for k in range(N):
 
     #### 4th Order Ranga Kutta Method for Discretization
     k1 = f_dynamics(state,ctrl,s_current)
-    k2 = f_dynamics(state + (ds/2)*k1,ctrl,s_current)
-    k3 = f_dynamics(state + (ds/2)*k2, ctrl,s_current)
-    k4 = f_dynamics(state + (ds)*k3, ctrl,s_current)
+    k2 = f_dynamics(state + (ds/2)*k1,ctrl,s_current + ds/2)
+    k3 = f_dynamics(state + (ds/2)*k2, ctrl,s_current + ds/2)
+    k4 = f_dynamics(state + (ds)*k3, ctrl,s_grid[k+1])
 
     #### Dynamics Constraints
     state_next = state + (ds/6)*(k1 + 2*k2 + 2*k3 + k4)
