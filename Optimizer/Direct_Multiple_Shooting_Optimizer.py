@@ -119,11 +119,11 @@ curv = f_kappa(s)
 
 #### Dynamics
 s_dot = (1/time_scale)*sigma/(1 - n*curv)
-n_ddot = (speed_scale/time_scale)*curv*(sigma^2)/(1 - n*curv)
-sigma_dot = (speed_scale/time_scale)*(F_d - f_Drag)/vehicle.m
+n_ddot = (speed_scale/time_scale)*curv*(sigma**2)/(1 - n*curv)
+sigma_dot = (speed_scale/time_scale)*(F_d - f_Drag(s))/vehicle.m
 
 ODE = vertcat(1/s_dot, n_dot_N/s_dot, n_ddot/s_dot, sigma_dot/s_dot)
-f_dynamics = Function('f_dynamics',[X_sym,U_sym],[ODE])
+f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 
 ### Cost Function & Constraints
 #### Cost Function
@@ -158,10 +158,10 @@ for k in range(N):
     ctrl = U[:,k]
 
     #### 4th Order Ranga Kutta Method for Discretization
-    k1 = f_dynamics(state,ctrl)
-    k2 = f_dynamics(state + (ds/2)*k1, ctrl)
-    k3 = f_dynamics(state + (ds/2)*k2, ctrl)
-    k4 = f_dynamics(state + (ds)*k3, ctrl)
+    k1 = f_dynamics(state,ctrl,s_current)
+    k2 = f_dynamics(state + (ds/2)*k1,ctrl,s_current)
+    k3 = f_dynamics(state + (ds/2)*k2, ctrl,s_current)
+    k4 = f_dynamics(state + (ds)*k3, ctrl,s_current)
 
     #### Dynamics Constraints
     state_next = state + (ds/6)*(k1 + 2*k2 + 2*k3 + k4)
@@ -181,7 +181,7 @@ for k in range(N):
 
     #### Tire Force Constraints
     g_tire.append(((ctrl[1])**2 + (vehicle.m*ctrl[0])**2) - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(state[3])))**2)
-    lbg_tire.append(0)
+    lbg_tire.append(-np.inf)
     ubg_tire.append(0)
 
     #### Cost Function
@@ -209,9 +209,6 @@ for r in range(N+1):
     idx_n_dot = r*4 + 2
     idx_sigma = r*4 + 3
 
-    idx_n_ddot = 4*(N+1) + 2*r
-    idx_F_d = 4*(N+1) + 2*r + 1
-
     if r == 0:
         lbx[idx_t] = 0
         ubx[idx_t] = 0
@@ -225,12 +222,15 @@ for r in range(N+1):
     lbx[idx_sigma] = 2*speed_scale
     ubx[idx_sigma] = vehicle.umax*speed_scale
 
-    lbx[idx_F_d] = (vehicle.peakbrakingtorque/vehicle.R)*force_scale
-    ubx[idx_F_d] = (vehicle.peakdrivingtorque/vehicle.R)*force_scale
-
     x0[idx_t] = time_scale*(s_grid[r]/vehicle.umax)
     x0[idx_sigma] = vehicle.umax*speed_scale
-    x0[idx_F_d] = (vehicle.peakdrivingtorque/vehicle.R)*force_scale
+
+    if r < N:
+        idx_n_ddot = 4*(N+1) + 2*r
+        idx_F_d = 4*(N+1) + 2*r + 1
+        lbx[idx_F_d] = (vehicle.peakbrakingtorque/vehicle.R)*force_scale
+        ubx[idx_F_d] = (vehicle.peakdrivingtorque/vehicle.R)*force_scale
+        x0[idx_F_d] = (vehicle.peakdrivingtorque/vehicle.R)*force_scale
 
 ### Nonlinear Solver for Point Mass Model
 nlp = {'x': states,'f': cost,'g': g}
