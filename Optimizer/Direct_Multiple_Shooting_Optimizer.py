@@ -28,7 +28,7 @@ plt.close('all')
 
 #=====================================================================================================================================================================================================================
 # User Inputs
-N = 4000                                                                                                    # Number of Segments on the track          
+N = 1000                                                                                                    # Number of Segments on the track          
 
 #=====================================================================================================================================================================================================================
 # Import Track Data
@@ -55,13 +55,13 @@ file_path2 = filedialog.askopenfilename(title="Select the Vehicle Data",filetype
 if file_path2:
     with open(file_path2, 'r') as f:
         vehicledata = json.load(f)
-        vehicle = SimpleNamespace(vehicledata)
+        vehicle = SimpleNamespace(**vehicledata)
     print("Loaded Vehicle Data")
     print(f"Mass of the Vehicle: {vehicle.m}")
 else:
     raise FileNotFoundError("Vehicle Data not found")
 
-##====================================================================================================================================================================================================================
+#====================================================================================================================================================================================================================
 # Point Mass Model Optimization [to generate initial guess for the vehicle model]
 ## System Model Definition
 lap_length = track_data.arc_s[-1]                                                                           # Total Lap Length along the track centerline in m                         
@@ -70,7 +70,7 @@ ds = lap_length/N                                                               
 
 ## Optimization States Definition
 X = SX.sym('X',4,N+1)
-U = SX.sym('U',2,N)
+U = SX.sym('U',1,N)
 states = vertcat(reshape(X, -1, 1), reshape(U, -1, 1))
 print(f"Length of Optimal Control State Vector is :{states.numel()}")
 
@@ -82,7 +82,7 @@ f_theta = ca.interpolant('f_theta','linear',[track_data.arc_s.tolist()],track_da
 
 ## System Definition
 X_sym = SX.sym('X_sym',4)
-U_sym = SX.sym('U_sym',2)
+U_sym = SX.sym('U_sym',1)
 s = SX.sym('s')
 
 ### Scaling X[.] = X_scale [1/units]*X [Units]
@@ -99,15 +99,13 @@ n_dot_N = X_sym[2]
 sigma_N = X_sym[3]
 
 #### Controls
-n_ddot_N = U_sym[0]
-F_d_N = U_sym[1]
+F_d_N = U_sym[0]
 
 ### Dynamics Definition
 t = t_N/time_scale
 n = n_N/length_scale
 n_dot = n_dot_N*time_scale/length_scale
 sigma = sigma_N/speed_scale
-n_ddot = n_ddot_N*time_scale/speed_scale
 F_d = F_d_N/force_scale
 
 #### Aerodynamic Forces
@@ -119,8 +117,8 @@ curv = f_kappa(s)
 
 #### Dynamics
 s_dot = (1/time_scale)*sigma/(1 - n*curv)
-n_ddot = (speed_scale/time_scale)*curv*(sigma**2)/(1 - n*curv)
-sigma_dot = (speed_scale/time_scale)*(F_d - f_Drag(s))/vehicle.m
+n_ddot = (speed_scale/time_scale**2)*curv*(sigma**2)/(1 - n*curv)
+sigma_dot = (speed_scale/time_scale)*(F_d - f_Drag(X_sym))/vehicle.m
 
 ODE = vertcat(1/s_dot, n_dot_N/s_dot, n_ddot/s_dot, sigma_dot/s_dot)
 f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
@@ -128,7 +126,7 @@ f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 ### Cost Function & Constraints
 #### Cost Function
 cost = 0
-e1 = 1e-4
+e1 = 1e-6
 
 #### Constraints
 g_dynamics = []
@@ -154,6 +152,7 @@ ubg_end = []
 ### Nonlinear Program Solver (NLP) Definition for Point Mass
 for k in range(N):
     s_current = s_grid[k]
+    curvature = f_kappa(s_current)
     state = X[:,k]
     ctrl = U[:,k]
 
@@ -175,18 +174,18 @@ for k in range(N):
     ubg_time.append(np.inf)
 
     #### Vehicle Power Constraints
-    g_power.append(ctrl[1]*state[3])
+    g_power.append(ctrl[0]*state[3]/(force_scale*speed_scale))
     lbg_power.append(vehicle.peakbrakingpower)
     ubg_power.append(vehicle.peakdrivingpower)
 
     #### Tire Force Constraints
-    g_tire.append(((ctrl[1])**2 + (vehicle.m*ctrl[0])**2) - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(state[3])))**2)
+    g_tire.append(((ctrl[0]/force_scale)**2 + (vehicle.m*curvature*((state[3]/speed_scale)**2)/(1 - curvature*state[1]/length_scale))**2) - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(state)))**2)
     lbg_tire.append(-np.inf)
     ubg_tire.append(0)
 
     #### Cost Function
     dt = (state_next[0] - state[0])/time_scale
-    cost = cost + dt*e1*(ctrl[1]**2)
+    cost = cost + dt*e1*(ctrl[0]**2)
 
 cost = cost + X[0,-1]/time_scale
 
@@ -226,21 +225,89 @@ for r in range(N+1):
     x0[idx_sigma] = vehicle.umax*speed_scale
 
     if r < N:
-        idx_n_ddot = 4*(N+1) + 2*r
-        idx_F_d = 4*(N+1) + 2*r + 1
+        idx_F_d = 4*(N+1) + r
         lbx[idx_F_d] = (vehicle.peakbrakingtorque/vehicle.R)*force_scale
         ubx[idx_F_d] = (vehicle.peakdrivingtorque/vehicle.R)*force_scale
         x0[idx_F_d] = (vehicle.peakdrivingtorque/vehicle.R)*force_scale
 
 ### Nonlinear Solver for Point Mass Model
 nlp = {'x': states,'f': cost,'g': g}
-opts = {'ipopt': {'max_iter': 2000,'print_level': 5}}
+opts = {'ipopt': {'max_iter': 4000,'print_level': 5}}
 
 solver = nlpsol('solver', 'ipopt', nlp, opts)
 sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
 full_sol = np.array(sol['x']).flatten()
 n_x_total =  4*(N + 1)
 X_opt = full_sol[:n_x_total].reshape((4, N + 1), order='F')
-U_opt = full_sol[n_x_total:].reshape((2, N), order='F')
+U_opt = full_sol[n_x_total:].reshape((1, N), order='F')
 print(f"Shape of X_opt is: {X_opt.shape}")
 print(f"Shape of U_opt is: {U_opt.shape}")
+
+time_opt = X_opt[0,:]/time_scale
+n_opt = X_opt[1,:]/length_scale
+n_dot_opt = X_opt[2,:]*(length_scale/time_scale)
+sigma_opt = X_opt[3,:]/speed_scale
+F_d_opt = U_opt[0,:]/force_scale
+
+print(f"Optimized Lap Time is: {time_opt[-1]}")
+
+#====================================================================================================================================================================================================================
+# Frenet Coordinates to Cartesian Coordinates
+f_normal1 = ca.interpolant('f_normal1','linear',[track_data.arc_s.tolist()],track_data.n[0,:].tolist())
+f_normal2 = ca.interpolant('f_normal2','linear',[track_data.arc_s.tolist()],track_data.n[1,:].tolist())
+f_normal3 = ca.interpolant('f_normal3','linear',[track_data.arc_s.tolist()],track_data.n[2,:].tolist())
+
+f_xc = ca.interpolant('f_xc','linear',[track_data.arc_s.tolist()],track_data.xc.tolist())
+f_yc = ca.interpolant('f_yc','linear',[track_data.arc_s.tolist()],track_data.yc.tolist())
+f_zc = ca.interpolant('f_zc','linear',[track_data.arc_s.tolist()],track_data.zc.tolist())
+
+x_opt = np.array(f_xc(s_grid)).flatten() + n_opt * np.array(f_normal1(s_grid)).flatten()
+y_opt = np.array(f_yc(s_grid)).flatten() + n_opt * np.array(f_normal2(s_grid)).flatten()
+z_opt = np.array(f_zc(s_grid)).flatten() + n_opt * np.array(f_normal3(s_grid)).flatten()
+#====================================================================================================================================================================================================================
+# Results and Plots 
+## Racing Line
+fig = go.Figure()
+
+# Optimized Right Boundary Data
+fig.add_trace(go.Scatter3d(
+    x=track_data.br[0,:], y=track_data.br[1,:], z=track_data.br[2,:],
+    mode='lines',
+    name='Right Boundary - Optimized',
+    line=dict(color='blue', width=4)
+))
+
+# Optimized Left Boundary Data
+fig.add_trace(go.Scatter3d(
+    x=track_data.bl[0,:], y=track_data.bl[1,:], z=track_data.bl[2,:], 
+    mode='lines',
+    name='Left Boundary - Optimized',
+    line=dict(color='blue', width=4)
+))
+
+# Optimized Centerline
+fig.add_trace(go.Scatter3d(
+    x=track_data.xc, y=track_data.yc, z=track_data.zc, 
+    mode='lines',
+    name='Centerline Coordinates - Optimized',
+    line=dict(color='red',width=4)
+))
+
+# Optimal Racing Line Data
+fig.add_trace(go.Scatter3d(
+    x=x_opt, y=y_opt, z=z_opt,
+    mode='lines',
+    name='Optimized Racing Line',
+    line=dict(color='black', width=4)
+))
+
+fig.update_layout(
+    title="Circuit de Barcelona-Catalunya - 3D Track Geometry",
+    scene=dict(
+        xaxis_title='x-coordinate (m)',
+        yaxis_title='y-coordinate (m)',
+        zaxis_title='Elevation (m)',
+        aspectmode='data'),
+    margin=dict(l=0, r=0, b=0, t=50)
+)
+fig.show()
