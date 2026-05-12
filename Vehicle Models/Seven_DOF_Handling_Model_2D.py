@@ -21,7 +21,7 @@ from casadi import *
 import matplotlib
 matplotlib.use('Qt5Agg')
 import plotly.graph_objects as go
-sys.path.append(os.path.abspath('D:\Personal Projects\Lap_Time_Simulation_and_Sensitivity_Analysis\Tire Models'))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Tire Models'))
 from tire_models import get_tire_model
 os.system('cls' if os.name == 'nt' else 'clear')
 plt.close('all')
