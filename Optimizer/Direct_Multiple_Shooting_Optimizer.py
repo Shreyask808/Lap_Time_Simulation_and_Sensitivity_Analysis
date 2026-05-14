@@ -28,7 +28,7 @@ plt.close('all')
 
 #=====================================================================================================================================================================================================================
 # User Inputs
-N = 1000                                                                                                    # Number of Segments on the track          
+N = 2000                                                                                                    # Number of Segments on the track          
 
 #=====================================================================================================================================================================================================================
 # Import Track Data
@@ -70,7 +70,7 @@ ds = lap_length/N                                                               
 
 ## Optimization States Definition
 X = SX.sym('X',4,N+1)
-U = SX.sym('U',1,N)
+U = SX.sym('U',2,N)
 states = vertcat(reshape(X, -1, 1), reshape(U, -1, 1))
 print(f"Length of Optimal Control State Vector is :{states.numel()}")
 
@@ -82,7 +82,7 @@ f_theta = ca.interpolant('f_theta','linear',[track_data.arc_s.tolist()],track_da
 
 ## System Definition
 X_sym = SX.sym('X_sym',4)
-U_sym = SX.sym('U_sym',1)
+U_sym = SX.sym('U_sym',2)
 s = SX.sym('s')
 
 ### Scaling X[.] = X_scale [1/units]*X [Units]
@@ -95,38 +95,45 @@ angle_scale = 1                                                                 
 #### States
 t_N = X_sym[0]  
 n_N = X_sym[1]
-n_dot_N = X_sym[2]
-sigma_N = X_sym[3]
+u_N = X_sym[2]
+v_N = X_sym[3]
 
 #### Controls
 F_d_N = U_sym[0]
+F_n_N = U_sym[1]
 
 ### Dynamics Definition
 t = t_N/time_scale
 n = n_N/length_scale
-n_dot = n_dot_N*time_scale/length_scale
-sigma = sigma_N/speed_scale
+u = u_N/speed_scale
+v = v_N/speed_scale
+
 F_d = F_d_N/force_scale
+F_n = F_n_N/force_scale
 
 #### Aerodynamic Forces
-Drag = (1/2)*vehicle.Cd*vehicle.rho*vehicle.A*(sigma**2)
-Lift = (1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(sigma**2)
+Drag = (1/2)*vehicle.Cd*vehicle.rho*vehicle.A*(u**2)
+Lift = (1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(u**2)
 f_Drag = Function('f_Drag',[X_sym],[Drag])
 f_Lift = Function('f_Lift',[X_sym],[Lift])
 curv = f_kappa(s)
 
 #### Dynamics
-s_dot = (1/time_scale)*sigma/(1 - n*curv)
-n_ddot = (speed_scale/time_scale**2)*curv*(sigma**2)/(1 - n*curv)
-sigma_dot = (speed_scale/time_scale)*(F_d - f_Drag(X_sym))/vehicle.m
+s_dot = (1/time_scale)*(u)/(1 - n*curv)
+n_dot_N = (length_scale/time_scale)*v
+u_dot_N = (length_scale/time_scale**2)*(F_d - Drag)/vehicle.m
+v_dot_N = (length_scale/time_scale**2)*(F_n/vehicle.m - (u**2)*curv/(1 - n*curv))
 
-ODE = vertcat(1/s_dot, n_dot_N/s_dot, n_ddot/s_dot, sigma_dot/s_dot)
+ODE = vertcat(1/s_dot,n_dot_N/s_dot,u_dot_N/s_dot,v_dot_N/s_dot)
 f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 
 ### Cost Function & Constraints
 #### Cost Function
 cost = 0
 e1 = 1e-6
+e2 = 1e-6
+e3 = 1e-4
+e4 = 1e-9
 
 #### Constraints
 g_dynamics = []
@@ -152,6 +159,7 @@ ubg_end = []
 ### Nonlinear Program Solver (NLP) Definition for Point Mass
 for k in range(N):
     s_current = s_grid[k]
+    kappa = f_kappa(s_current)
     curvature = f_kappa(s_current)
     state = X[:,k]
     ctrl = U[:,k]
@@ -174,24 +182,24 @@ for k in range(N):
     ubg_time.append(np.inf)
 
     #### Vehicle Power Constraints
-    g_power.append(ctrl[0]*state[3]/(force_scale*speed_scale))
+    g_power.append(ctrl[0]*state[2]/(force_scale*speed_scale))
     lbg_power.append(vehicle.peakbrakingpower)
     ubg_power.append(vehicle.peakdrivingpower)
 
     #### Tire Force Constraints
-    g_tire.append(((ctrl[0]/force_scale)**2 + (vehicle.m*curvature*((state[3]/speed_scale)**2)/(1 - curvature*state[1]/length_scale))**2) - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(state)))**2)
+    g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(state)))**2)
+
     lbg_tire.append(-np.inf)
     ubg_tire.append(0)
 
     #### Cost Function
-    dt = (state_next[0] - state[0])/time_scale
-    cost = cost + dt*e1*(ctrl[0]**2)
+    dt = (state_next[0] - state[0])
+    cost = cost + dt*(e1*((ctrl[0])**2) + e2*((ctrl[1])**2) + e3*((state[1])**2) + e4*((state[3])**2))
+cost = cost + X[0,-1]
 
-cost = cost + X[0,-1]/time_scale
-
-g_end.append(X[[1,3],-1] - X[[1,3],0])
-lbg_end.append(np.zeros((2,1)))
-ubg_end.append(np.zeros((2,1)))
+g_end.append(X[[1,2,3],-1] - X[[1,2,3],0])
+lbg_end.append(np.zeros((3,1)))
+ubg_end.append(np.zeros((3,1)))
 
 g = vertcat(*g_dynamics, *g_time, *g_power, *g_tire, *g_end)
 lbg = vertcat(*lbg_dynamics, *lbg_time, *lbg_power, *lbg_tire, *lbg_end)
@@ -205,8 +213,8 @@ x0 = np.zeros(states.numel())
 for r in range(N+1):
     idx_t = r*4
     idx_n = r*4 + 1
-    idx_n_dot = r*4 + 2
-    idx_sigma = r*4 + 3
+    idx_u = r*4 + 2
+    idx_v = r*4 + 3
 
     if r == 0:
         lbx[idx_t] = 0
@@ -218,36 +226,52 @@ for r in range(N+1):
     lbx[idx_n] = f_nr(s_grid[r])*length_scale
     ubx[idx_n] = f_nl(s_grid[r])*length_scale
 
-    lbx[idx_sigma] = 2*speed_scale
-    ubx[idx_sigma] = vehicle.umax*speed_scale
+    lbx[idx_u] = 2*speed_scale
+    ubx[idx_u] = vehicle.umax*speed_scale
 
     x0[idx_t] = time_scale*(s_grid[r]/vehicle.umax)
-    x0[idx_sigma] = vehicle.umax*speed_scale
+    x0[idx_u] = vehicle.umax*speed_scale
 
     if r < N:
-        idx_F_d = 4*(N+1) + r
+        idx_F_d = 4*(N+1) + 2*r
+        idx_F_n = 4*(N+1) + 2*r + 1
+
         lbx[idx_F_d] = (vehicle.peakbrakingtorque/vehicle.R)*force_scale
         ubx[idx_F_d] = (vehicle.peakdrivingtorque/vehicle.R)*force_scale
         x0[idx_F_d] = (vehicle.peakdrivingtorque/vehicle.R)*force_scale
 
+        lbx[idx_F_n] = -(vehicle.mu0*vehicle.m*vehicle.g)*force_scale
+        ubx[idx_F_n] =  (vehicle.mu0*vehicle.m*vehicle.g)*force_scale
+        x0[idx_F_n]  = 0
+
 ### Nonlinear Solver for Point Mass Model
 nlp = {'x': states,'f': cost,'g': g}
-opts = {'ipopt': {'max_iter': 4000,'print_level': 5}}
-
+opts = {'ipopt': {
+    'max_iter': 4000,
+    'print_level': 5,
+    'tol': 1e-6,                # primal feasibility tolerance (default 1e-8)
+    'dual_inf_tol': 1e-6,       # dual infeasibility tolerance
+    'constr_viol_tol': 1e-6,    # constraint violation tolerance
+    'compl_inf_tol': 1e-6,      # complementarity tolerance
+    'acceptable_tol': 1e-4,     # looser tolerance - solver accepts if stuck
+    'acceptable_iter': 15,      # iterations at acceptable tol before accepting
+}}
 solver = nlpsol('solver', 'ipopt', nlp, opts)
 sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
 full_sol = np.array(sol['x']).flatten()
 n_x_total =  4*(N + 1)
 X_opt = full_sol[:n_x_total].reshape((4, N + 1), order='F')
-U_opt = full_sol[n_x_total:].reshape((1, N), order='F')
+U_opt = full_sol[n_x_total:].reshape((2, N), order='F')
 print(f"Shape of X_opt is: {X_opt.shape}")
 print(f"Shape of U_opt is: {U_opt.shape}")
 
 time_opt = X_opt[0,:]/time_scale
 n_opt = X_opt[1,:]/length_scale
-n_dot_opt = X_opt[2,:]*(length_scale/time_scale)
-sigma_opt = X_opt[3,:]/speed_scale
+u_opt = X_opt[2,:]/speed_scale
+v_opt = X_opt[3,:]/speed_scale
+
 F_d_opt = U_opt[0,:]/force_scale
+F_n_opt = U_opt[1,:]/force_scale
 
 print(f"Optimized Lap Time is: {time_opt[-1]}")
 
@@ -312,3 +336,5 @@ fig.update_layout(
     margin=dict(l=0, r=0, b=0, t=50)
 )
 fig.show()
+
+
