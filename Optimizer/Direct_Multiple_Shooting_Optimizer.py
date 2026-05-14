@@ -130,10 +130,10 @@ f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 ### Cost Function & Constraints
 #### Cost Function
 cost = 0
-e1 = 1e-6
-e2 = 1e-6
+e1 = 1e-5
+e2 = 1e-5
 e3 = 1e-4
-e4 = 1e-9
+e4 = 1e-4
 
 #### Constraints
 g_dynamics = []
@@ -246,10 +246,11 @@ for r in range(N+1):
 
 ### Nonlinear Solver for Point Mass Model
 nlp = {'x': states,'f': cost,'g': g}
+#opts = {'ipopt': {'max_iter': 4000,'print_level': 5}}
 opts = {'ipopt': {
     'max_iter': 4000,
     'print_level': 5,
-    'tol': 1e-6,                # primal feasibility tolerance (default 1e-8)
+    'tol': 1e-8,                # primal feasibility tolerance (default 1e-8)
     'dual_inf_tol': 1e-6,       # dual infeasibility tolerance
     'constr_viol_tol': 1e-6,    # constraint violation tolerance
     'compl_inf_tol': 1e-6,      # complementarity tolerance
