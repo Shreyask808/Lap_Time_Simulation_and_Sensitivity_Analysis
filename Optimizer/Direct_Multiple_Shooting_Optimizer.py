@@ -319,7 +319,7 @@ fig.add_trace(go.Scatter3d(
     x=track_data.xc, y=track_data.yc, z=track_data.zc, 
     mode='lines',
     name='Centerline Coordinates - Optimized',
-    line=dict(color='red', width=4, dash='dash')
+    line=dict(color='red', width=4, dash='dashdot')
 ))
 
 # Optimal Racing Line Data
