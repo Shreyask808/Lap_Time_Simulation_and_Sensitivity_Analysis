@@ -67,7 +67,7 @@ vehicle.peakbrakingtorque = - 2000                                          # Ve
 vehicle.rho = 1.2                                                           # Density of Air in kg/m^3
 vehicle.g = 9.81                                                            # Gravitational Constant in m/s^2
 vehicle.umax = 80                                                           # Maximum Longitudinal Velocity in m/s
-
+vehicle.vmax = vehicle.umax*np.tan(vehicle.alpha_max)                       # Maximum Lateral Velocity in m/s
 #=====================================================================================================================================================================================================================
 # Save Track Data
 root = tk.Tk()
