@@ -28,7 +28,7 @@ plt.close('all')
 
 #=====================================================================================================================================================================================================================
 # User Inputs
-N = 2000                                                                                                    # Number of Segments on the track          
+N = 4000                                                                                                    # Number of Segments on the track          
 
 #=====================================================================================================================================================================================================================
 # Import Track Data
@@ -130,10 +130,10 @@ f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 ### Cost Function & Constraints
 #### Cost Function
 cost = 0
-e1 = 1e-5
-e2 = 1e-5
+e1 = 1e-3
+e2 = 1e-2
 e3 = 1e-4
-e4 = 1e-4
+e4 = 1e-3
 
 #### Constraints
 g_dynamics = []
@@ -193,9 +193,9 @@ for k in range(N):
     ubg_tire.append(0)
 
     #### Cost Function
-    dt = (state_next[0] - state[0])
+    dt = (state_next[0] - state[0])/time_scale
     cost = cost + dt*(e1*((ctrl[0])**2) + e2*((ctrl[1])**2) + e3*((state[1])**2) + e4*((state[3])**2))
-cost = cost + X[0,-1]
+cost = cost + X[0,-1]/time_scale
 
 g_end.append(X[[1,2,3],-1] - X[[1,2,3],0])
 lbg_end.append(np.zeros((3,1)))
@@ -228,6 +228,9 @@ for r in range(N+1):
 
     lbx[idx_u] = 2*speed_scale
     ubx[idx_u] = vehicle.umax*speed_scale
+
+    lbx[idx_v] = -vehicle.vmax*speed_scale
+    ubx[idx_v] = vehicle.vmax*speed_scale
 
     x0[idx_t] = time_scale*(s_grid[r]/vehicle.umax)
     x0[idx_u] = vehicle.umax*speed_scale
@@ -292,7 +295,7 @@ z_opt = np.array(f_zc(s_grid)).flatten() + n_opt * np.array(f_normal3(s_grid)).f
 
 #====================================================================================================================================================================================================================
 # Results and Plots 
-## Racing Line
+## Figure 1 - Racing Line
 fig = go.Figure()
 
 # Optimized Right Boundary Data
@@ -316,7 +319,7 @@ fig.add_trace(go.Scatter3d(
     x=track_data.xc, y=track_data.yc, z=track_data.zc, 
     mode='lines',
     name='Centerline Coordinates - Optimized',
-    line=dict(color='red',width=4)
+    line=dict(color='red', width=4, dash='dash')
 ))
 
 # Optimal Racing Line Data
@@ -338,4 +341,55 @@ fig.update_layout(
 )
 fig.show()
 
+# Figure 2 - Lateral and Drive Forces
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
 
+# Drive Force
+ax1.plot(s_grid[0:-1],F_d_opt,color='black')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Drive Force [N]')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='red')
+
+# Lateral Force
+ax2.plot(s_grid[0:-1],F_n_opt,color='black')
+ax2.set_xlabel('Track Centerline Arc Length [m]')
+ax2.set_ylabel('Lateral Force [N]')
+ax2.grid(True, alpha=0.3)
+ax2.axhline(0,color='red')
+
+plt.tight_layout()
+plt.show()
+
+# Figure 3 - Lateral Offset, Longitudinal and Lateral Velocities
+fig, (ax1,ax2,ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+
+# Lateral Offset
+ax1.plot(s_grid,n_opt,color='black')
+ax1.plot(track_data.arc_s,track_data.nl,color='blue',label='Left Boundary')
+ax1.plot(track_data.arc_s,track_data.nr,color='red',label='Right Boundary')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Lateral Offset [m]')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='red')
+ax1.legend()
+
+# Longitudinal Speed
+ax2.plot(s_grid,u_opt,color='black')
+ax2.set_xlabel('Track Centerline Arc Length [m]')
+ax2.set_ylabel('Longitudinal Speed [m/s]')
+ax2.grid(True, alpha=0.3)
+ax2.axhline(0,color='red')
+ax2.axhline(vehicle.umax,color='red')
+
+# Lateral Speed
+ax3.plot(s_grid,v_opt,color='black')
+ax3.set_xlabel('Track Centerline Arc Length [m]')
+ax3.set_ylabel('Lateral Speed [m/s]')
+ax3.grid(True, alpha=0.3)
+ax3.axhline(0,color='red')
+ax3.axhline(vehicle.vmax,color='red')
+ax3.axhline(-vehicle.vmax,color='red')
+
+plt.tight_layout()
+plt.show()
