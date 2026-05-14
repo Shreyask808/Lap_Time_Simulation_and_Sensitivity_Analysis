@@ -26,10 +26,12 @@
     "kv": 1000000.0,
     "alpha_max": 0.17453292519943295,
     "Crr": 0,
-    "peakpower": 450000.0,
+    "peakdrivingpower": 450000.0,
+    "peakbrakingpower": -900000.0,
     "peakdrivingtorque": 1000,
     "peakbrakingtorque": -2000,
     "rho": 1.2,
     "g": 9.81,
-    "umax": 80
+    "umax": 80,
+    "vmax": 14.106158456677198
 }

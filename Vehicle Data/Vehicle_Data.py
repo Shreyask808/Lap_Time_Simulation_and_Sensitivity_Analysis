@@ -57,7 +57,8 @@ vehicle.Crr = 0                                                             # Ti
 
 #====================================================================================================================================================================================================================
 # Vehicle Powertrain Limits
-vehicle.peakpower = 450e3                                                   # Vehicle peak power in W
+vehicle.peakdrivingpower = 450e3                                            # Vehicle peak power in W
+vehicle.peakbrakingpower = -900e3                                           # Vehicle peak power in W
 vehicle.peakdrivingtorque = 1000                                            # Vehicle peak driving torque per tire in N.m
 vehicle.peakbrakingtorque = - 2000                                          # Vehicle peak braking torque per tire in N.m
 
@@ -66,7 +67,7 @@ vehicle.peakbrakingtorque = - 2000                                          # Ve
 vehicle.rho = 1.2                                                           # Density of Air in kg/m^3
 vehicle.g = 9.81                                                            # Gravitational Constant in m/s^2
 vehicle.umax = 80                                                           # Maximum Longitudinal Velocity in m/s
-
+vehicle.vmax = vehicle.umax*np.tan(vehicle.alpha_max)                       # Maximum Lateral Velocity in m/s
 #=====================================================================================================================================================================================================================
 # Save Track Data
 root = tk.Tk()
