@@ -32,5 +32,6 @@
     "peakbrakingtorque": -2000,
     "rho": 1.2,
     "g": 9.81,
-    "umax": 80
+    "umax": 80,
+    "vmax": 14.106158456677198
 }
