@@ -293,6 +293,7 @@ x_opt = np.array(f_xc(s_grid)).flatten() + n_opt * np.array(f_normal1(s_grid)).f
 y_opt = np.array(f_yc(s_grid)).flatten() + n_opt * np.array(f_normal2(s_grid)).flatten()
 z_opt = np.array(f_zc(s_grid)).flatten() + n_opt * np.array(f_normal3(s_grid)).flatten()
 
+#%%
 #====================================================================================================================================================================================================================
 # Results and Plots 
 ## Figure 1 - Racing Line
