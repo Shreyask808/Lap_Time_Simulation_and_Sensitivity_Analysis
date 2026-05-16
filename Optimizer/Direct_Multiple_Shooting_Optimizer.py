@@ -394,3 +394,4 @@ ax3.axhline(-vehicle.vmax,color='red')
 
 plt.tight_layout()
 plt.show()
+# %%
