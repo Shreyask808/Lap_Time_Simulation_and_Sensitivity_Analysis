@@ -28,7 +28,7 @@ plt.close('all')
 
 #=====================================================================================================================================================================================================================
 # User Inputs
-N = 1500                                                                                                    # Number of Segments on the track          
+N = 2000                                                                                                    # Number of Segments on the track          
 
 #=====================================================================================================================================================================================================================
 # Import Track Data
@@ -130,10 +130,10 @@ f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 ### Cost Function & Constraints
 #### Cost Function
 cost = 0
-e1 = 1e-3
-e2 = 1e-2
-e3 = 1e-4
-e4 = 1e-3
+e1 = 0
+e2 = 0
+e3 = 0
+e4 = 0
 
 #### Constraints
 g_dynamics = []
@@ -243,13 +243,13 @@ for r in range(N+1):
         ubx[idx_F_d] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
         x0[idx_F_d] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
 
-        lbx[idx_F_n] = -(vehicle.mu0*vehicle.m*vehicle.g)*force_scale
-        ubx[idx_F_n] =  (vehicle.mu0*vehicle.m*vehicle.g)*force_scale
+        lbx[idx_F_n] = -(vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
+        ubx[idx_F_n] = (vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
         x0[idx_F_n]  = 0
 
 ### Nonlinear Solver for Point Mass Model
 nlp = {'x': states,'f': cost,'g': g}
-opts = {'ipopt': {'max_iter': 4000,'print_level': 5,'mu_strategy': 'adaptive','hessian_approximation': 'limited-memory'}}
+opts = {'ipopt': {'max_iter': 4000,'print_level': 5,'mu_strategy': 'adaptive'}}
 solver = nlpsol('solver', 'ipopt', nlp, opts)
 sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
 full_sol = np.array(sol['x']).flatten()
@@ -266,6 +266,8 @@ v_opt = X_opt[3,:]/speed_scale
 
 F_d_opt = U_opt[0,:]/force_scale
 F_n_opt = U_opt[1,:]/force_scale
+
+Power_opt = F_d_opt*u_opt[:-1]
 
 print(f"Optimized Lap Time is: {time_opt[-1]}")
 
@@ -384,4 +386,17 @@ ax3.axhline(-vehicle.vmax*(18/5),color='red')
 
 plt.tight_layout()
 plt.show()
-# %%
+
+
+fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
+
+# Lateral Offset
+ax1.plot(s_grid[:-1],Power_opt/1000,color='black')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Vehicle Power [kW]')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='red')
+ax1.legend()
+
+plt.tight_layout()
+plt.show()
