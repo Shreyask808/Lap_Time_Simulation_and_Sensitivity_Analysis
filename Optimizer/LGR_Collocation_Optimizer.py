@@ -340,12 +340,8 @@ for m in range(N_intervals):
         s_mk  = s_left + (h / 2) * (1.0 + tau_k)   # arc-length at collocation pt
         F_col[:, k] = f_ode(X_m[:, k], U_m[:, k], s_mk)
 
-    # D * X_m^T  →  shape K x 4, then transpose → 4 x K
-    # LGR collocation residual:  (2/h) * (D @ X_m.T).T - F_col = 0
-    # Equivalently:  D @ X_m.T = (h/2) * F_col.T
-    for k in range(K):
-        lhs = sum2(D_ca[k, :] * X_m)   # D[k,:] dot each column of X_m → 4 x 1... use mtimes
-    # Use matrix product: (K x K) @ (K x 4) = K x 4, each row is one collocation pt
+    # LGR collocation residual:  D @ X_m.T = (h/2) * F_col.T
+    # (K x K) @ (K x 4) = K x 4
     DX  = mtimes(D_ca, X_m.T)        # K x 4
     hF  = (h / 2) * F_col.T          # K x 4
 
