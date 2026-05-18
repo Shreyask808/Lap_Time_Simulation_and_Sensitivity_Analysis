@@ -28,7 +28,7 @@ plt.close('all')
 
 #=====================================================================================================================================================================================================================
 # User Inputs
-N = 4000                                                                                                    # Number of Segments on the track          
+N = 2000                                                                                                    # Number of Segments on the track          
 
 #=====================================================================================================================================================================================================================
 # Import Track Data
@@ -75,7 +75,7 @@ states = vertcat(reshape(X, -1, 1), reshape(U, -1, 1))
 print(f"Length of Optimal Control State Vector is :{states.numel()}")
 
 ## Interpolation Functions 
-f_kappa = ca.interpolant('f_kappa','linear',[track_data.arc_s.tolist()],track_data.omega_z.tolist())
+f_kappa = ca.interpolant('f_kappa','bspline',[track_data.arc_s.tolist()],track_data.omega_z.tolist())
 f_nl = ca.interpolant('f_nl','linear',[track_data.arc_s.tolist()],track_data.nl.tolist())
 f_nr = ca.interpolant('f_nr','linear',[track_data.arc_s.tolist()],track_data.nr.tolist())
 f_theta = ca.interpolant('f_theta','linear',[track_data.arc_s.tolist()],track_data.theta.tolist())
@@ -121,7 +121,7 @@ curv = f_kappa(s)
 #### Dynamics
 s_dot = (1/time_scale)*(u)/(1 - n*curv)
 n_dot_N = (length_scale/time_scale)*v
-u_dot_N = (length_scale/time_scale**2)*(F_d - Drag)/vehicle.m
+u_dot_N = (length_scale/time_scale**2)*((F_d - Drag)/vehicle.m + v*u*curv/(1 - n*curv))
 v_dot_N = (length_scale/time_scale**2)*(F_n/vehicle.m - (u**2)*curv/(1 - n*curv))
 
 ODE = vertcat(1/s_dot,n_dot_N/s_dot,u_dot_N/s_dot,v_dot_N/s_dot)
@@ -130,10 +130,10 @@ f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 ### Cost Function & Constraints
 #### Cost Function
 cost = 0
-e1 = 1e-3
-e2 = 1e-2
-e3 = 1e-4
-e4 = 1e-3
+e1 = 0
+e2 = 0
+e3 = 0
+e4 = 0
 
 #### Constraints
 g_dynamics = []
@@ -239,27 +239,17 @@ for r in range(N+1):
         idx_F_d = 4*(N+1) + 2*r
         idx_F_n = 4*(N+1) + 2*r + 1
 
-        lbx[idx_F_d] = (vehicle.peakbrakingtorque/vehicle.R)*force_scale
-        ubx[idx_F_d] = (vehicle.peakdrivingtorque/vehicle.R)*force_scale
-        x0[idx_F_d] = (vehicle.peakdrivingtorque/vehicle.R)*force_scale
+        lbx[idx_F_d] = (4*vehicle.peakbrakingtorque/vehicle.R)*force_scale
+        ubx[idx_F_d] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
+        x0[idx_F_d] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
 
-        lbx[idx_F_n] = -(vehicle.mu0*vehicle.m*vehicle.g)*force_scale
-        ubx[idx_F_n] =  (vehicle.mu0*vehicle.m*vehicle.g)*force_scale
+        lbx[idx_F_n] = -(vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
+        ubx[idx_F_n] = (vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
         x0[idx_F_n]  = 0
 
 ### Nonlinear Solver for Point Mass Model
 nlp = {'x': states,'f': cost,'g': g}
-#opts = {'ipopt': {'max_iter': 4000,'print_level': 5}}
-opts = {'ipopt': {
-    'max_iter': 4000,
-    'print_level': 5,
-    'tol': 1e-8,                # primal feasibility tolerance (default 1e-8)
-    'dual_inf_tol': 1e-6,       # dual infeasibility tolerance
-    'constr_viol_tol': 1e-6,    # constraint violation tolerance
-    'compl_inf_tol': 1e-6,      # complementarity tolerance
-    'acceptable_tol': 1e-4,     # looser tolerance - solver accepts if stuck
-    'acceptable_iter': 15,      # iterations at acceptable tol before accepting
-}}
+opts = {'ipopt': {'max_iter': 4000,'print_level': 5,'mu_strategy': 'adaptive'}}
 solver = nlpsol('solver', 'ipopt', nlp, opts)
 sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
 full_sol = np.array(sol['x']).flatten()
@@ -276,6 +266,8 @@ v_opt = X_opt[3,:]/speed_scale
 
 F_d_opt = U_opt[0,:]/force_scale
 F_n_opt = U_opt[1,:]/force_scale
+
+Power_opt = F_d_opt*u_opt[:-1]
 
 print(f"Optimized Lap Time is: {time_opt[-1]}")
 
@@ -376,22 +368,35 @@ ax1.axhline(0,color='red')
 ax1.legend()
 
 # Longitudinal Speed
-ax2.plot(s_grid,u_opt,color='black')
+ax2.plot(s_grid,u_opt*(18/5),color='black')
 ax2.set_xlabel('Track Centerline Arc Length [m]')
-ax2.set_ylabel('Longitudinal Speed [m/s]')
+ax2.set_ylabel('Longitudinal Speed [kmph]')
 ax2.grid(True, alpha=0.3)
 ax2.axhline(0,color='red')
-ax2.axhline(vehicle.umax,color='red')
+ax2.axhline(vehicle.umax*(18/5),color='red')
 
 # Lateral Speed
-ax3.plot(s_grid,v_opt,color='black')
+ax3.plot(s_grid,v_opt*(18/5),color='black')
 ax3.set_xlabel('Track Centerline Arc Length [m]')
-ax3.set_ylabel('Lateral Speed [m/s]')
+ax3.set_ylabel('Lateral Speed [kmph]')
 ax3.grid(True, alpha=0.3)
 ax3.axhline(0,color='red')
-ax3.axhline(vehicle.vmax,color='red')
-ax3.axhline(-vehicle.vmax,color='red')
+ax3.axhline(vehicle.vmax*(18/5),color='red')
+ax3.axhline(-vehicle.vmax*(18/5),color='red')
 
 plt.tight_layout()
 plt.show()
-# %%
+
+
+fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
+
+# Lateral Offset
+ax1.plot(s_grid[:-1],Power_opt/1000,color='black')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Vehicle Power [kW]')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='red')
+ax1.legend()
+
+plt.tight_layout()
+plt.show()
