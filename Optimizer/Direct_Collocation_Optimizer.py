@@ -189,8 +189,16 @@ for k in range(N):
     lbg_power.append(vehicle.peakbrakingpower)
     ubg_power.append(vehicle.peakdrivingpower)
 
+    g_power.append(ctrl[0]*X[2,k+1]/(force_scale*speed_scale))
+    lbg_power.append(vehicle.peakbrakingpower)
+    ubg_power.append(vehicle.peakdrivingpower)
+
     #### Tire Force Constraints
     g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(state)))**2)
+    lbg_tire.append(-np.inf)
+    ubg_tire.append(0)
+
+    g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(X_mid)))**2)
     lbg_tire.append(-np.inf)
     ubg_tire.append(0)
 
