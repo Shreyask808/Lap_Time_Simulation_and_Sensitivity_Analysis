@@ -131,7 +131,7 @@ f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 #### Cost Function
 cost = 0
 e1 = 1e-3
-e2 = 1e-2
+e2 = 1
 e3 = 1e-4
 e4 = 1e-4
 
