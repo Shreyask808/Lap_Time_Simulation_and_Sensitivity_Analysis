@@ -206,17 +206,19 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     ubg_force = []
 
     A = vertcat(horzcat(1,1,1,1),horzcat(vehicle.Wf/2,-vehicle.Wf/2,vehicle.Wr/2,-vehicle.Wr/2),horzcat((vehicle.d-vehicle.l),(vehicle.d-vehicle.l),vehicle.d,vehicle.d),horzcat((1-vehicle.Droll),(vehicle.Droll-1),-vehicle.Droll,vehicle.Droll))
-    B1 = vehicle.m*vehicle.g - Downforce
-    B2 = -vehicle.h*(Fyrl + Fyrr + (Fyfl+Fyfr)*cos(delta) + (Fxfl+Fxfr)*sin(delta))
-    B3 = -vehicle.a*Downforce + vehicle.h*(Fxrl + Fxrr + (Fxfr + Fxfl)*cos(delta) - (Fyfl + Fyfr)*sin(delta))
-    B = vertcat(B1,B2,B3,0)
+    B_expr = vertcat(
+    vehicle.m*vehicle.g - Downforce,
+    -vehicle.h*(Fyrl + Fyrr + (Fyfl+Fyfr)*cos(delta) + (Fxfl+Fxfr)*sin(delta)),
+    -vehicle.a*Downforce + vehicle.h*(Fxrl + Fxrr + (Fxfr+Fxfl)*cos(delta) - (Fyfl+Fyfr)*sin(delta)),
+    0)
+    f_B = Function('f_B', [X_sym, U_sym, s], [B_expr])
 
     # Nonlinear Programing Definition
     for k in range(N):
         s_current = s_grid[k]
         state = X[:,k]
         ctrl = U[:,k]
-        
+
         # Dynamics Definition
         # 4th Order Ranga Kutta Method for Discretization
         k1 = f_dynamics(state,ctrl,s_current)
@@ -242,7 +244,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
 
         # Normal Force Constraints
         force = (1/force_scale)*vertcat(ctrl[5],ctrl[6],ctrl[7],ctrl[8])
-        g_force.append(mtimes(A,force) - B)
+        B_val = f_B(state, ctrl, s_current)
+        g_force.append(mtimes(A,force) - B_val)
         lbg_force.append(np.zeros((4,1)))
         ubg_force.append(np.zeros((4,1)))
 
