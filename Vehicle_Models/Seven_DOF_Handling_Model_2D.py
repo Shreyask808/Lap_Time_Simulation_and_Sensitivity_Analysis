@@ -208,7 +208,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
 
     A = vertcat(horzcat(1,1,1,1),horzcat(vehicle.Wf/2,-vehicle.Wf/2,vehicle.Wr/2,-vehicle.Wr/2),horzcat((vehicle.d-vehicle.l),(vehicle.d-vehicle.l),vehicle.d,vehicle.d),horzcat((1-vehicle.Droll),(vehicle.Droll-1),-vehicle.Droll,vehicle.Droll))
     B_expr = vertcat(
-    vehicle.m*vehicle.g + Downforce,
+    vehicle.m*vehicle.g - Downforce,
     -vehicle.h*(Fyrl + Fyrr + (Fyfl+Fyfr)*cos(delta) + (Fxfl+Fxfr)*sin(delta)),
     -vehicle.a*Downforce + vehicle.h*(Fxrl + Fxrr + (Fxfr+Fxfl)*cos(delta) - (Fyfl+Fyfr)*sin(delta)),0)
     f_B = Function('f_B', [X_sym, U_sym, s], [B_expr])
@@ -313,8 +313,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         if r < N:  # slacks only exist for k=0..N-1
             for i in range(4):
                 idx_s = n_slack_start + r * 4 + i
-                lbx[idx_s] = -1e4
-                ubx[idx_s] =  1e4
+                lbx[idx_s] = -1e6
+                ubx[idx_s] =  1e6
                 x0[idx_s]  =  0.0
 
         if r == 0:
@@ -387,13 +387,34 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
             lbx[idx_Fzrr] = 0
             ubx[idx_Fzrr] = np.inf
 
-            # Controls
+           # Controls
             x0[idx_delta] = 0
+
+            # Step 1 - rough Fz guess
             x0[idx_Fzfl] = (vehicle.m*vehicle.g/4)*force_scale
             x0[idx_Fzfr] = (vehicle.m*vehicle.g/4)*force_scale
             x0[idx_Fzrl] = (vehicle.m*vehicle.g/4)*force_scale
             x0[idx_Fzrr] = (vehicle.m*vehicle.g/4)*force_scale
-            
+
+            # Step 2 - iterate to find consistent Fz
+            for _ in range(10):
+                x_r     = x0[r*n_states:(r+1)*n_states].flatten()
+                u_r_vec = x0[n_states*(N+1) + r*u_states:n_states*(N+1) + (r+1)*u_states].flatten()
+
+                # Evaluate B at current Fz
+                B_val = np.array(f_B_check(x_r, u_r_vec, s_grid[r])).flatten()
+
+                # Solve A*Fz = B exactly
+                Fz_new = np.linalg.solve(A_num, B_val)
+                Fz_new = np.maximum(Fz_new, 0)
+
+                # Update x0
+                x0[idx_Fzfl] = Fz_new[0]*force_scale
+                x0[idx_Fzfr] = Fz_new[1]*force_scale
+                x0[idx_Fzrl] = Fz_new[2]*force_scale
+                x0[idx_Fzrr] = Fz_new[3]*force_scale
+
+            # Step 3 - compute torques from converged Fz
             x_r     = x0[r*n_states:(r+1)*n_states].flatten()
             u_r_vec = x0[n_states*(N+1) + r*u_states:n_states*(N+1) + (r+1)*u_states].flatten()
 
@@ -410,7 +431,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
             x0[idx_Mdfr] = (Fx_fr * r_fr) * (force_scale * length_scale)
             x0[idx_Mdrl] = (Fx_rl * r_rl) * (force_scale * length_scale)
             x0[idx_Mdrr] = (Fx_rr * r_rr) * (force_scale * length_scale)
-
+            
     # ===== DIAGNOSTIC - place right before return =====
     f_sim = Function('f_sim', [X_sym, U_sym, s], [ODE])
     f_B_check = Function('f_B_check', [X_sym, U_sym, s], [B_expr])
