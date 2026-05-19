@@ -117,7 +117,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     # Aerodynamic Forces
     Drag = -(1/2)*vehicle.Cd*vehicle.rho*vehicle.A*(u**2)
     f_Drag = Function('f_Drag',[X_sym],[Drag])
-    Downforce = -(1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(u**2)
+    Downforce = (1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(u**2)
     f_Downforce = Function('f_Downforce',[X_sym],[Downforce])
 
     # Tire Contact Patch Velocities in Vehicle Frame
@@ -208,7 +208,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
 
     A = vertcat(horzcat(1,1,1,1),horzcat(vehicle.Wf/2,-vehicle.Wf/2,vehicle.Wr/2,-vehicle.Wr/2),horzcat((vehicle.d-vehicle.l),(vehicle.d-vehicle.l),vehicle.d,vehicle.d),horzcat((1-vehicle.Droll),(vehicle.Droll-1),-vehicle.Droll,vehicle.Droll))
     B_expr = vertcat(
-    vehicle.m*vehicle.g - Downforce,
+    vehicle.m*vehicle.g + Downforce,
     -vehicle.h*(Fyrl + Fyrr + (Fyfl+Fyfr)*cos(delta) + (Fxfl+Fxfr)*sin(delta)),
     -vehicle.a*Downforce + vehicle.h*(Fxrl + Fxrr + (Fxfr+Fxfl)*cos(delta) - (Fyfl+Fyfr)*sin(delta)),0)
     f_B = Function('f_B', [X_sym, U_sym, s], [B_expr])
@@ -280,6 +280,15 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     x0 = np.zeros(states.shape)
     n_slack_start = n_states * (N + 1) + u_states * N
     
+    f_Fxfl_val = Function('f_Fxfl_val', [X_sym, U_sym], [Fxfl])
+    f_Fxfr_val = Function('f_Fxfr_val', [X_sym, U_sym], [Fxfr])
+    f_Fxrl_val = Function('f_Fxrl_val', [X_sym, U_sym], [Fxrl])
+    f_Fxrr_val = Function('f_Fxrr_val', [X_sym, U_sym], [Fxrr])
+    f_rfl_val  = Function('f_rfl_val',  [X_sym, U_sym], [rfl])
+    f_rfr_val  = Function('f_rfr_val',  [X_sym, U_sym], [rfr])
+    f_rrl_val  = Function('f_rrl_val',  [X_sym, U_sym], [rrl])
+    f_rrr_val  = Function('f_rrr_val',  [X_sym, U_sym], [rrr])
+
     for r in range(N+1):
         idx_t = r*n_states
         idx_n = r*n_states + 1
@@ -380,15 +389,28 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
 
             # Controls
             x0[idx_delta] = 0
-            x0[idx_Mdfl] = (x0_ini.F_d_opt[r]*vehicle.R/4)*(force_scale*length_scale)
-            x0[idx_Mdfr] = (x0_ini.F_d_opt[r]*vehicle.R/4)*(force_scale*length_scale)
-            x0[idx_Mdrl] = (x0_ini.F_d_opt[r]*vehicle.R/4)*(force_scale*length_scale)
-            x0[idx_Mdrr] = (x0_ini.F_d_opt[r]*vehicle.R/4)*(force_scale*length_scale)
-            x0[idx_Fzfl] = (vehicle.m*vehicle.g*vehicle.d/(2*vehicle.l))*force_scale
-            x0[idx_Fzfr] = (vehicle.m*vehicle.g*vehicle.d/(2*vehicle.l))*force_scale
-            x0[idx_Fzrl] = (vehicle.m*vehicle.g/2)*(1 - (vehicle.d/vehicle.l))*force_scale
-            x0[idx_Fzrr] = (vehicle.m*vehicle.g/2)*(1 - (vehicle.d/vehicle.l))*force_scale
-        
+            x0[idx_Fzfl] = (vehicle.m*vehicle.g/4)*force_scale
+            x0[idx_Fzfr] = (vehicle.m*vehicle.g/4)*force_scale
+            x0[idx_Fzrl] = (vehicle.m*vehicle.g/4)*force_scale
+            x0[idx_Fzrr] = (vehicle.m*vehicle.g/4)*force_scale
+            
+            x_r     = x0[r*n_states:(r+1)*n_states].flatten()
+            u_r_vec = x0[n_states*(N+1) + r*u_states:n_states*(N+1) + (r+1)*u_states].flatten()
+
+            Fx_fl = float(f_Fxfl_val(x_r, u_r_vec))
+            Fx_fr = float(f_Fxfr_val(x_r, u_r_vec))
+            Fx_rl = float(f_Fxrl_val(x_r, u_r_vec))
+            Fx_rr = float(f_Fxrr_val(x_r, u_r_vec))
+            r_fl  = float(f_rfl_val(x_r, u_r_vec))
+            r_fr  = float(f_rfr_val(x_r, u_r_vec))
+            r_rl  = float(f_rrl_val(x_r, u_r_vec))
+            r_rr  = float(f_rrr_val(x_r, u_r_vec))
+
+            x0[idx_Mdfl] = (Fx_fl * r_fl) * (force_scale * length_scale)
+            x0[idx_Mdfr] = (Fx_fr * r_fr) * (force_scale * length_scale)
+            x0[idx_Mdrl] = (Fx_rl * r_rl) * (force_scale * length_scale)
+            x0[idx_Mdrr] = (Fx_rr * r_rr) * (force_scale * length_scale)
+
     # ===== DIAGNOSTIC - place right before return =====
     f_sim = Function('f_sim', [X_sym, U_sym, s], [ODE])
     f_B_check = Function('f_B_check', [X_sym, U_sym, s], [B_expr])
