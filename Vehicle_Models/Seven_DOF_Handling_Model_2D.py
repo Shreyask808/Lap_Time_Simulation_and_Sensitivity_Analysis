@@ -47,7 +47,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
 # States Definition
     X = SX.sym('X',n_states,N+1)
     U = SX.sym('U',u_states,N)
-    states = vertcat(reshape(X, -1, 1), reshape(U, -1, 1))
+    S_slack = SX.sym('S_slack', 4, N)  # 4 slack vars per timestep (one per force row)
+    states = vertcat(reshape(X, -1, 1), reshape(U, -1, 1), reshape(S_slack, -1, 1))
     print(f"Length of State Vector is :{states.numel()}")
 
 # System Definition
@@ -184,6 +185,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     e2 = 1e-6
     e3 = 1e-6
     e4 = 1e-6
+    slack_penalty = 1e-4
 
     # Dynamics Constraints
     g_dynamics = []
@@ -209,8 +211,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     B_expr = vertcat(
     vehicle.m*vehicle.g - Downforce,
     -vehicle.h*(Fyrl + Fyrr + (Fyfl+Fyfr)*cos(delta) + (Fxfl+Fxfr)*sin(delta)),
-    -vehicle.a*Downforce + vehicle.h*(Fxrl + Fxrr + (Fxfr+Fxfl)*cos(delta) - (Fyfl+Fyfr)*sin(delta)),
-    0)
+    -vehicle.a*Downforce + vehicle.h*(Fxrl + Fxrr + (Fxfr+Fxfl)*cos(delta) - (Fyfl+Fyfr)*sin(delta)),0)
     f_B = Function('f_B', [X_sym, U_sym, s], [B_expr])
 
     # Nonlinear Programing Definition
@@ -218,7 +219,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         s_current = s_grid[k]
         state = X[:,k]
         ctrl = U[:,k]
-
+        slack = S_slack[:, k]
         # Dynamics Definition
         # 4th Order Ranga Kutta Method for Discretization
         k1 = f_dynamics(state,ctrl,s_current)
@@ -245,16 +246,17 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         # Normal Force Constraints
         force = (1/force_scale)*vertcat(ctrl[5],ctrl[6],ctrl[7],ctrl[8])
         B_val = f_B(state, ctrl, s_current)
-        g_force.append(mtimes(A,force) - B_val)
+        g_force.append(mtimes(A, force) - B_val - slack)
         lbg_force.append(np.zeros((4,1)))
         ubg_force.append(np.zeros((4,1)))
+
 
         # Cost Function
         dt = (state_next[0] - state[0])/time_scale
         cost = cost + dt*(e0*ctrl[0]**2 + e1*ctrl[1]**2 + e2*ctrl[2]**2 + e3*ctrl[3]**2 + e4*ctrl[4]**2)
-
+        cost = cost + slack_penalty * sumsqr(slack)
     cost = cost + X[0,-1]/time_scale
-
+    
     # Closed Loop Constraints
     g_end = []
     lbg_end = []
@@ -277,7 +279,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     lbx = np.full(states.shape, -np.inf)
     ubx = np.full(states.shape, np.inf)
     x0 = np.zeros(states.shape)
-
+    n_slack_start = n_states * (N + 1) + u_states * N
+    
     for r in range(N+1):
         idx_t = r*n_states
         idx_n = r*n_states + 1
@@ -299,6 +302,13 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         idx_Fzrl = n_states*(N+1) + u_states*r + 7
         idx_Fzrr = n_states*(N+1) + u_states*r + 8
         
+        if r < N:  # slacks only exist for k=0..N-1
+            for i in range(4):
+                idx_s = n_slack_start + r * 4 + i
+                lbx[idx_s] = -1e4
+                ubx[idx_s] =  1e4
+                x0[idx_s]  =  0.0
+
         if r == 0:
             lbx[idx_t] = 0
             ubx[idx_t] = 0
