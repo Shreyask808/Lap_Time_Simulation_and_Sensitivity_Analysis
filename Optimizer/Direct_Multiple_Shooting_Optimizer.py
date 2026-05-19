@@ -420,9 +420,10 @@ opts = {'ipopt': {
     'max_iter': 4000,
     'print_level': 5,
     'mu_strategy': 'adaptive',
-    'tol': 1e-4,
-    'acceptable_tol': 1e-3,
-    'acceptable_iter': 5,
+    'warm_start_init_point': 'yes',       # add this
+    'warm_start_bound_push': 1e-6,
+    'bound_push': 1e-6,                   # prevent x0 from being on bounds
+    'bound_frac': 1e-6,
 }}
 print("Compiling solver...")
 solver = nlpsol('solver', 'ipopt', nlp, opts)
