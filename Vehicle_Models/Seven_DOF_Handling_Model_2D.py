@@ -303,8 +303,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
             lbx[idx_t] = 0
             ubx[idx_t] = 0
 
-            lbx[idx_psi] = f_theta(s_grid[r])*angle_scale
-            ubx[idx_psi] = f_theta(s_grid[r])*angle_scale
+            lbx[idx_psi] = float(f_theta(s_grid[r]))*angle_scale
+            ubx[idx_psi] = float(f_theta(s_grid[r]))*angle_scale
         else:
             lbx[idx_t] = 0
             ubx[idx_t] = 200*time_scale
@@ -333,7 +333,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         # States
         x0[idx_t] = x0_ini.time_opt[r]*time_scale
         x0[idx_n] = x0_ini.n_opt[r]*length_scale
-        x0[idx_psi] = f_theta(s_grid[r])*angle_scale
+        x0[idx_psi]  = float(f_theta(s_grid[r]))*angle_scale
         x0[idx_u] = x0_ini.u_opt[r]*speed_scale
         x0[idx_v] = x0_ini.v_opt[r]*speed_scale
         x0[idx_O_fl] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
