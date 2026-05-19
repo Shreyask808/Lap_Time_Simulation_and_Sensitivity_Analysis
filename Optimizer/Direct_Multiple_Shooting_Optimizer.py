@@ -422,6 +422,7 @@ opts = {'ipopt': {
     'mu_strategy': 'adaptive',
     'warm_start_init_point': 'yes',       # add this
     'warm_start_bound_push': 1e-6,
+    'warm_start_mult_bound_push': 1e-6,
     'bound_push': 1e-6,                   # prevent x0 from being on bounds
     'bound_frac': 1e-6,
 }}
