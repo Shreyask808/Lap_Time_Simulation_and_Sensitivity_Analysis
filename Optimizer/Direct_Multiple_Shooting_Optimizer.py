@@ -23,12 +23,15 @@ import pickle
 matplotlib.use('Qt5Agg') # Or 'TkAgg' if you don't have Qt installed
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Vehicle_Models'))
+from Seven_DOF_Handling_Model_2D import Seven_DOF_Handling_Model_2D
 os.system('cls' if os.name == 'nt' else 'clear')
 plt.close('all')
 
 #=====================================================================================================================================================================================================================
 # User Inputs
 N = 2000                                                                                                    # Number of Segments on the track          
+name = 'brush'
 
 #=====================================================================================================================================================================================================================
 # Import Track Data
@@ -130,10 +133,10 @@ f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 ### Cost Function & Constraints
 #### Cost Function
 cost = 0
-e1 = 0
-e2 = 0
-e3 = 0
-e4 = 0
+e1 = 1e-3
+e2 = 1e-2
+e3 = 1e-4
+e4 = 1e-4
 
 #### Constraints
 g_dynamics = []
@@ -266,8 +269,15 @@ v_opt = X_opt[3,:]/speed_scale
 
 F_d_opt = U_opt[0,:]/force_scale
 F_n_opt = U_opt[1,:]/force_scale
-
 Power_opt = F_d_opt*u_opt[:-1]
+
+x0_ini = SimpleNamespace()
+x0_ini.time_opt = time_opt
+x0_ini.n_opt = n_opt
+x0_ini.u_opt = u_opt
+x0_ini.v_opt = v_opt
+x0_ini.F_d_opt = F_d_opt
+x0_ini.F_n_opt = F_n_opt
 
 print(f"Optimized Lap Time is: {time_opt[-1]}")
 
@@ -400,3 +410,7 @@ ax1.legend()
 
 plt.tight_layout()
 plt.show()
+
+STATES,COST,G,LBG,UBG,LBX,UBX,X0 = Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini)
+
+print(f"Length of Optimal Control State Vector is :{STATES.numel()}")
