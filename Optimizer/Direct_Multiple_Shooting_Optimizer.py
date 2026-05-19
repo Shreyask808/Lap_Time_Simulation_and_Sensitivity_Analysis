@@ -30,7 +30,7 @@ plt.close('all')
 
 #=====================================================================================================================================================================================================================
 # User Inputs
-N = 2000                                                                                                    # Number of Segments on the track          
+N = 200                                                                                                    # Number of Segments on the track          
 name = 'brush'
 
 #=====================================================================================================================================================================================================================
@@ -415,7 +415,17 @@ STATES,COST,G,LBG,UBG,LBX,UBX,X0 = Seven_DOF_Handling_Model_2D(vehicle,track_dat
 
 print(f"Length of Optimal Control State Vector is :{STATES.numel()}")
 nlp = {'x':STATES,'f':COST,'g':G}
-opts = {'ipopt': {'max_iter': 4000,'print_level': 5,'mu_strategy': 'adaptive'}}
+print("Building NLP graph... this may take several minutes")
+opts = {'ipopt': {
+    'max_iter': 4000,
+    'print_level': 5,
+    'mu_strategy': 'adaptive',
+    'tol': 1e-4,
+    'acceptable_tol': 1e-3,
+    'acceptable_iter': 5,
+}}
+print("Compiling solver...")
 solver = nlpsol('solver', 'ipopt', nlp, opts)
+print("Solver compiled - starting optimization")
 sol = solver(x0=X0, lbx=LBX, ubx=UBX, lbg=LBG, ubg=UBG)
 full_sol = np.array(sol['x']).flatten()
