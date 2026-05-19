@@ -216,6 +216,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         s_current = s_grid[k]
         state = X[:,k]
         ctrl = U[:,k]
+        
         # Dynamics Definition
         # 4th Order Ranga Kutta Method for Discretization
         k1 = f_dynamics(state,ctrl,s_current)
