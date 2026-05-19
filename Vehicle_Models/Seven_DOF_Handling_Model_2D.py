@@ -49,7 +49,6 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     U = SX.sym('U',u_states,N)
     S_slack = SX.sym('S_slack', 4, N)  # 4 slack vars per timestep (one per force row)
     states = vertcat(reshape(X, -1, 1), reshape(U, -1, 1), reshape(S_slack, -1, 1))
-    print(f"Length of State Vector is :{states.numel()}")
 
 # System Definition
     X_sym = SX.sym('X_sym',n_states)                                                                            # Symbolic State Definition
@@ -390,4 +389,47 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
             x0[idx_Fzrl] = (vehicle.m*vehicle.g/2)*(1 - (vehicle.d/vehicle.l))*force_scale
             x0[idx_Fzrr] = (vehicle.m*vehicle.g/2)*(1 - (vehicle.d/vehicle.l))*force_scale
         
+    # ===== DIAGNOSTIC - place right before return =====
+    f_sim = Function('f_sim', [X_sym, U_sym, s], [ODE])
+    f_B_check = Function('f_B_check', [X_sym, U_sym, s], [B_expr])
+
+    A_num = np.array([
+        [1, 1, 1, 1],
+        [vehicle.Wf/2, -vehicle.Wf/2, vehicle.Wr/2, -vehicle.Wr/2],
+        [vehicle.d-vehicle.l, vehicle.d-vehicle.l, vehicle.d, vehicle.d],
+        [1-vehicle.Droll, vehicle.Droll-1, -vehicle.Droll, vehicle.Droll]
+    ])
+
+    print("\n========== DIAGNOSTICS ==========")
+    for k in range(3):
+        x_k   = x0[k*n_states:(k+1)*n_states].flatten()
+        u_k   = x0[n_states*(N+1) + k*u_states : n_states*(N+1) + (k+1)*u_states].flatten()
+        x_kp1 = x0[(k+1)*n_states:(k+2)*n_states].flatten()
+
+        k1 = np.array(f_sim(x_k, u_k, s_grid[k])).flatten()
+        k2 = np.array(f_sim(x_k + ds/2*k1, u_k, s_grid[k] + ds/2)).flatten()
+        k3 = np.array(f_sim(x_k + ds/2*k2, u_k, s_grid[k] + ds/2)).flatten()
+        k4 = np.array(f_sim(x_k + ds*k3,   u_k, s_grid[k+1])).flatten()
+        x_next_rk4 = x_k + (ds/6)*(k1 + 2*k2 + 2*k3 + k4)
+
+        dyn_residual  = x_kp1 - x_next_rk4
+        Fz_k          = np.array([u_k[5], u_k[6], u_k[7], u_k[8]]) / force_scale
+        B_val         = np.array(f_B_check(x_k, u_k, s_grid[k])).flatten()
+        force_residual = A_num @ Fz_k - B_val
+
+        print(f"\n--- k={k} ---")
+        print(f"  u={x_k[4]/speed_scale:.2f} m/s, "
+              f"v={x_k[5]/speed_scale:.3f} m/s, "
+              f"psi_dot={x_k[3]*(time_scale/angle_scale):.4f} rad/s, "
+              f"xi={x_k[2]/angle_scale - float(f_theta(s_grid[k])):.4f} rad")
+        print(f"  ODE k1:               {np.round(k1, 4)}")
+        print(f"  Dynamics residual:    {np.round(dyn_residual, 4)}")
+        print(f"  Max dyn residual:     {np.max(np.abs(dyn_residual)):.4e}  "
+              f"(worst state idx={np.argmax(np.abs(dyn_residual))})")
+        print(f"  Normal force residual:{np.round(force_residual, 4)}")
+        print(f"  Max force residual:   {np.max(np.abs(force_residual)):.4e}")
+
+    print("\n========== END DIAGNOSTICS ==========")
+    # ===== END DIAGNOSTIC =====
+
     return states, cost, g, lbg, ubg, lbx, ubx, x0
