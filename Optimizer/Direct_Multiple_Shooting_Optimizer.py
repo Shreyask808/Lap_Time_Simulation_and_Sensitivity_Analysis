@@ -414,3 +414,8 @@ plt.show()
 STATES,COST,G,LBG,UBG,LBX,UBX,X0 = Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini)
 
 print(f"Length of Optimal Control State Vector is :{STATES.numel()}")
+nlp = {'x':STATES,'f':COST,'g':G}
+opts = {'ipopt': {'max_iter': 4000,'print_level': 5,'mu_strategy': 'adaptive'}}
+solver = nlpsol('solver', 'ipopt', nlp, opts)
+sol = solver(x0=X0, lbx=LBX, ubx=UBX, lbg=LBG, ubg=UBG)
+full_sol = np.array(sol['x']).flatten()
