@@ -131,7 +131,7 @@ f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 #### Cost Function
 cost = 0
 e1 = 1e-3
-e2 = 1e-2
+e2 = 1e-3
 e3 = 0
 e4 = 0
 
@@ -157,27 +157,30 @@ lbg_end = []
 ubg_end = []
 
 ### Nonlinear Program Solver (NLP) Definition for Point Mass
+### Nonlinear Program Solver (NLP) Definition for Point Mass
 for k in range(N):
     s_current = s_grid[k]
-    kappa = f_kappa(s_current)
-    curvature = f_kappa(s_current)
     state = X[:,k]
     ctrl = U[:,k]
 
-    #### 4th Order Ranga Kutta Method for Discretization
-    k1 = f_dynamics(state,ctrl,s_current)
-    k2 = f_dynamics(state + (ds/2)*k1,ctrl,s_current + ds/2)
-    k3 = f_dynamics(state + (ds/2)*k2, ctrl,s_current + ds/2)
-    k4 = f_dynamics(state + (ds)*k3, ctrl,s_grid[k+1])
+    #### Hermite-Simpson Collocation for Discretization
+    f0 = f_dynamics(state,        ctrl, s_current)
+    f1 = f_dynamics(X[:,k+1],     ctrl, s_grid[k+1])
 
-    #### Dynamics Constraints
-    state_next = state + (ds/6)*(k1 + 2*k2 + 2*k3 + k4)
+    # Hermite interpolation for midpoint state
+    X_mid = 0.5*(state + X[:,k+1]) + (ds/8)*(f0 - f1)
+
+    # Dynamics at midpoint
+    f_m = f_dynamics(X_mid, ctrl, s_current + ds/2)
+
+    #### Dynamics Constraints — Simpson quadrature
+    state_next = state + (ds/6)*(f0 + 4*f_m + f1)
     g_dynamics.append(X[:,k+1] - state_next)
     lbg_dynamics.append(np.zeros((4,1)))
     ubg_dynamics.append(np.zeros((4,1)))
 
     #### Time Constraints
-    g_time.append(state_next[0] - state[0])
+    g_time.append(X[0,k+1] - X[0,k])
     lbg_time.append(1e-6)
     ubg_time.append(np.inf)
 
@@ -186,14 +189,21 @@ for k in range(N):
     lbg_power.append(vehicle.peakbrakingpower)
     ubg_power.append(vehicle.peakdrivingpower)
 
+    g_power.append(ctrl[0]*X[2,k+1]/(force_scale*speed_scale))
+    lbg_power.append(vehicle.peakbrakingpower)
+    ubg_power.append(vehicle.peakdrivingpower)
+
     #### Tire Force Constraints
     g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(state)))**2)
+    lbg_tire.append(-np.inf)
+    ubg_tire.append(0)
 
+    g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(X_mid)))**2)
     lbg_tire.append(-np.inf)
     ubg_tire.append(0)
 
     #### Cost Function
-    dt = (state_next[0] - state[0])/time_scale
+    dt = (X[0,k+1] - X[0,k])/time_scale
     cost = cost + dt*(e1*((ctrl[0])**2) + e2*((ctrl[1])**2) + e3*((state[1])**2) + e4*((state[3])**2))
 cost = cost + X[0,-1]/time_scale
 
@@ -249,7 +259,7 @@ for r in range(N+1):
 
 ### Nonlinear Solver for Point Mass Model
 nlp = {'x': states,'f': cost,'g': g}
-opts = {'ipopt': {'max_iter': 4000,'print_level': 5,'mu_strategy': 'adaptive'}}
+opts = {'ipopt': {'max_iter': 4000,'print_level': 5,'mu_strategy': 'adaptive','acceptable_obj_change_tol': 5e-1}}
 solver = nlpsol('solver', 'ipopt', nlp, opts)
 sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
 full_sol = np.array(sol['x']).flatten()
