@@ -171,7 +171,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     O_rr_N_dot = (angle_scale/(time_scale**2))*(Md_rr - Fxrr*rrr)*(1/vehicle.Irr)
 
     ODE = vertcat(1/s_dot, n_N_dot/s_dot, psi_N_dot/s_dot,psi_ddot_N/s_dot, u_N_dot/s_dot, v_N_dot/s_dot, O_fl_N_dot/s_dot, O_fr_N_dot/s_dot, O_rl_N_dot/s_dot, O_rr_N_dot/s_dot)
-    f_dynamics = Function('f_dynamics',[X_sym,U_sym],[ODE])
+    f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 
 #==========================================================================================================================================================================================================================
 # Cost Function & Constraint Definition
@@ -213,14 +213,15 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
 
     # Nonlinear Programing Definition
     for k in range(N):
+        s_current = s_grid[k]
         state = X[:,k]
         ctrl = U[:,k]
         # Dynamics Definition
         # 4th Order Ranga Kutta Method for Discretization
-        k1 = f_dynamics(state,ctrl)
-        k2 = f_dynamics(state + (ds/2)*k1, ctrl)
-        k3 = f_dynamics(state + (ds/2)*k2, ctrl)
-        k4 = f_dynamics(state + (ds)*k3, ctrl)
+        k1 = f_dynamics(state,ctrl,s_current)
+        k2 = f_dynamics(state + (ds/2)*k1,ctrl,s_current + ds/2)
+        k3 = f_dynamics(state + (ds/2)*k2, ctrl,s_current + ds/2)
+        k4 = f_dynamics(state + (ds)*k3, ctrl,s_grid[k+1])
         state_next = state + (ds/6)*(k1 + 2*k2 + 2*k3 + k4)
 
         # Dynamics Constraint Definition
@@ -271,6 +272,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     # States and Control Input Limits
     lbx = np.full(states.shape, -np.inf)
     ubx = np.full(states.shape, np.inf)
+    x0 = np.zeros(states.shape)
 
     for r in range(N+1):
         idx_t = r*n_states
@@ -324,46 +326,54 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         lbx[idx_O_rr] = (5/vehicle.R)*(angle_scale/time_scale)
         ubx[idx_O_rr] = (vehicle.umax/vehicle.R)*(angle_scale/time_scale)
 
-        lbx[idx_delta] = vehicle.delta_min*angle_scale
-        ubx[idx_delta] = vehicle.delta_max*angle_scale
-
-        lbx[idx_Mdfl] = vehicle.peakbrakingtorque*force_scale*length_scale
-        ubx[idx_Mdfl] = vehicle.peakdrivingtorque*force_scale*length_scale
-
-        lbx[idx_Mdfr] = vehicle.peakbrakingtorque*force_scale*length_scale
-        ubx[idx_Mdfr] = vehicle.peakdrivingtorque*force_scale*length_scale
-
-        lbx[idx_Mdrl] = vehicle.peakbrakingtorque*force_scale*length_scale
-        ubx[idx_Mdrl] = vehicle.peakdrivingtorque*force_scale*length_scale
-
-        lbx[idx_Mdrr] = vehicle.peakbrakingtorque*force_scale*length_scale
-        ubx[idx_Mdrr] = vehicle.peakdrivingtorque*force_scale*length_scale
-
-    #==========================================================================================================================================================================================================================
-    # Initial Guess
-    x0 = np.zeros(states.shape)
-
-    for j in range(N+1):
         # States
-        x0[idx_t] = x0_ini.time_opt[j]*time_scale
-        x0[idx_n] = x0_ini.n_opt[j]*length_scale
-        x0[idx_psi] = f_theta(s_grid[j])*angle_scale
-        x0[idx_u] = x0_ini.u_opt[j]*speed_scale
-        x0[idx_v] = x0_ini.v_opt[j]*speed_scale
-        x0[idx_O_fl] = (x0_ini.u_opt[j]/vehicle.R)*(angle_scale/time_scale)
-        x0[idx_O_fr] = (x0_ini.u_opt[j]/vehicle.R)*(angle_scale/time_scale)
-        x0[idx_O_rl] = (x0_ini.u_opt[j]/vehicle.R)*(angle_scale/time_scale)
-        x0[idx_O_rr] = (x0_ini.u_opt[j]/vehicle.R)*(angle_scale/time_scale)
+        x0[idx_t] = x0_ini.time_opt[r]*time_scale
+        x0[idx_n] = x0_ini.n_opt[r]*length_scale
+        x0[idx_psi] = f_theta(s_grid[r])*angle_scale
+        x0[idx_u] = x0_ini.u_opt[r]*speed_scale
+        x0[idx_v] = x0_ini.v_opt[r]*speed_scale
+        x0[idx_O_fl] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+        x0[idx_O_fr] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+        x0[idx_O_rl] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+        x0[idx_O_rr] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
 
-        # Controls
-        x0[idx_delta] = f_theta(s_grid[j])*angle_scale
-        x0[idx_Mdfl] = (x0_ini.F_d_opt[j]*vehicle.R)*(force_scale*length_scale)
-        x0[idx_Mdfr] = (x0_ini.F_d_opt[j]*vehicle.R)*(force_scale*length_scale)
-        x0[idx_Mdrl] = (x0_ini.F_d_opt[j]*vehicle.R)*(force_scale*length_scale)
-        x0[idx_Mdrr] = (x0_ini.F_d_opt[j]*vehicle.R)*(force_scale*length_scale)
-        x0[idx_Fzfl] = (vehicle.m*vehicle.g*vehicle.d/(2*vehicle.l))*force_scale
-        x0[idx_Fzfr] = (vehicle.m*vehicle.g*vehicle.d/(2*vehicle.l))*force_scale
-        x0[idx_Fzrl] = (vehicle.m*vehicle.g/2)*(1 - (vehicle.d/vehicle.l))*force_scale
-        x0[idx_Fzrr] = (vehicle.m*vehicle.g/2)*(1 - (vehicle.d/vehicle.l))*force_scale
+        if r < N:
+            lbx[idx_delta] = vehicle.delta_min*angle_scale
+            ubx[idx_delta] = vehicle.delta_max*angle_scale
+
+            lbx[idx_Mdfl] = vehicle.peakbrakingtorque*force_scale*length_scale
+            ubx[idx_Mdfl] = vehicle.peakdrivingtorque*force_scale*length_scale
+
+            lbx[idx_Mdfr] = vehicle.peakbrakingtorque*force_scale*length_scale
+            ubx[idx_Mdfr] = vehicle.peakdrivingtorque*force_scale*length_scale
+
+            lbx[idx_Mdrl] = vehicle.peakbrakingtorque*force_scale*length_scale
+            ubx[idx_Mdrl] = vehicle.peakdrivingtorque*force_scale*length_scale
+
+            lbx[idx_Mdrr] = vehicle.peakbrakingtorque*force_scale*length_scale
+            ubx[idx_Mdrr] = vehicle.peakdrivingtorque*force_scale*length_scale
+
+            lbx[idx_Fzfl] = 0
+            ubx[idx_Fzfl] = np.inf
+
+            lbx[idx_Fzfr] = 0
+            ubx[idx_Fzfr] = np.inf
+            
+            lbx[idx_Fzrl] = 0
+            ubx[idx_Fzrl] = np.inf
+            
+            lbx[idx_Fzrr] = 0
+            ubx[idx_Fzrr] = np.inf
+
+            # Controls
+            x0[idx_delta] = 0
+            x0[idx_Mdfl] = (x0_ini.F_d_opt[r]*vehicle.R/4)*(force_scale*length_scale)
+            x0[idx_Mdfr] = (x0_ini.F_d_opt[r]*vehicle.R/4)*(force_scale*length_scale)
+            x0[idx_Mdrl] = (x0_ini.F_d_opt[r]*vehicle.R/4)*(force_scale*length_scale)
+            x0[idx_Mdrr] = (x0_ini.F_d_opt[r]*vehicle.R/4)*(force_scale*length_scale)
+            x0[idx_Fzfl] = (vehicle.m*vehicle.g*vehicle.d/(2*vehicle.l))*force_scale
+            x0[idx_Fzfr] = (vehicle.m*vehicle.g*vehicle.d/(2*vehicle.l))*force_scale
+            x0[idx_Fzrl] = (vehicle.m*vehicle.g/2)*(1 - (vehicle.d/vehicle.l))*force_scale
+            x0[idx_Fzrr] = (vehicle.m*vehicle.g/2)*(1 - (vehicle.d/vehicle.l))*force_scale
         
     return states, cost, g, lbg, ubg, lbx, ubx, x0
