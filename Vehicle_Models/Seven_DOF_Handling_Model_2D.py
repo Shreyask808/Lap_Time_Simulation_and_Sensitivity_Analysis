@@ -208,9 +208,9 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
 
     A = vertcat(horzcat(1,1,1,1),horzcat(vehicle.Wf/2,-vehicle.Wf/2,vehicle.Wr/2,-vehicle.Wr/2),horzcat((vehicle.d-vehicle.l),(vehicle.d-vehicle.l),vehicle.d,vehicle.d),horzcat((1-vehicle.Droll),(vehicle.Droll-1),-vehicle.Droll,vehicle.Droll))
     B_expr = vertcat(
-    vehicle.m*vehicle.g - Downforce,
+    vehicle.m*vehicle.g + Downforce,
     -vehicle.h*(Fyrl + Fyrr + (Fyfl+Fyfr)*cos(delta) + (Fxfl+Fxfr)*sin(delta)),
-    -vehicle.a*Downforce + vehicle.h*(Fxrl + Fxrr + (Fxfr+Fxfl)*cos(delta) - (Fyfl+Fyfr)*sin(delta)),0)
+    vehicle.a*Downforce + vehicle.h*(Fxrl + Fxrr + (Fxfr+Fxfl)*cos(delta) - (Fyfl+Fyfr)*sin(delta)),0)
     f_B = Function('f_B', [X_sym, U_sym, s], [B_expr])
 
     # Nonlinear Programing Definition
@@ -431,7 +431,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
             x0[idx_Mdfr] = (Fx_fr * r_fr) * (force_scale * length_scale)
             x0[idx_Mdrl] = (Fx_rl * r_rl) * (force_scale * length_scale)
             x0[idx_Mdrr] = (Fx_rr * r_rr) * (force_scale * length_scale)
-            
+
     # ===== DIAGNOSTIC - place right before return =====
     f_sim = Function('f_sim', [X_sym, U_sym, s], [ODE])
     f_B_check = Function('f_B_check', [X_sym, U_sym, s], [B_expr])
