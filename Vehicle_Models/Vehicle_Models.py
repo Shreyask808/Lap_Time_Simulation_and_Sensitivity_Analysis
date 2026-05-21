@@ -30,7 +30,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
 #=========================================================================================================================================================================================================================
 # System Dimensions    
     n_states = 10
-    u_states = 9
+    u_states = 5
 
 #==========================================================================================================================================================================================================================
 # System Model Definition
@@ -79,10 +79,6 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     Md_fr_N = U_sym[2]
     Md_rl_N = U_sym[3]
     Md_rr_N = U_sym[4]
-    Fzfl_N = U_sym[5]
-    Fzfr_N = U_sym[6]
-    Fzrl_N = U_sym[7]
-    Fzrr_N = U_sym[8]
 
     # Dynamics Definition
     # States
@@ -350,10 +346,10 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         x0[idx_psi]  = float(f_theta(s_grid[r]))*angle_scale
         x0[idx_u] = x0_ini.u_opt[r]*speed_scale
         x0[idx_v] = x0_ini.v_opt[r]*speed_scale
-        x0[idx_O_fl] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
-        x0[idx_O_fr] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
-        x0[idx_O_rl] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
-        x0[idx_O_rr] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+        #x0[idx_O_fl] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+        #x0[idx_O_fr] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+        #x0[idx_O_rl] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+        #x0[idx_O_rr] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
 
         if r < N:
             lbx[idx_delta] = vehicle.delta_min*angle_scale
