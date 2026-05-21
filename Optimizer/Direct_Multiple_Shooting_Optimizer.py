@@ -277,6 +277,7 @@ ax_opt = ((F_d_opt - drag)/vehicle.m + v_opt[:-1]*u_opt[:-1]*kappa/(1 - n_opt[:-
 ay_opt = (F_n_opt/vehicle.m - (u_opt[:-1]**2)*kappa/(1 - n_opt[:-1]*kappa))
 
 x0_ini = SimpleNamespace()
+x0_ini.s_grid_opt = s_grid
 x0_ini.time_opt = time_opt
 x0_ini.n_opt = n_opt
 x0_ini.u_opt = u_opt

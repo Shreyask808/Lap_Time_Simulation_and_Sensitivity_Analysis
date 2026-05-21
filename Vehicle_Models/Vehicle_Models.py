@@ -45,6 +45,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     f_nl = ca.interpolant('f_nl','linear',[track_data.arc_s.tolist()],track_data.nl.tolist())
     f_nr = ca.interpolant('f_nr','linear',[track_data.arc_s.tolist()],track_data.nr.tolist())
     f_theta = ca.interpolant('f_theta','linear',[track_data.arc_s.tolist()],track_data.theta.tolist())
+    f_ax = ca.interpolant('f_ax','linear',x0_ini.s_grid_opt.tolist(),x0_ini.ax_opt.tolist)
+    f_ay = ca.interpolant('f_ay','linear',x0_ini.s_grid_opt.tolist(),x0_ini.ay_opt.tolist)
 
 # States Definition
     X = SX.sym('X',n_states,N+1)
@@ -55,10 +57,6 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     X_sym = SX.sym('X_sym',n_states)                                                                            # Symbolic State Definition
     U_sym = SX.sym('U_sym',u_states)                                                                            # Symbolic Control Input Definition
     s = SX.sym('s')                                                                                             # Symbolic Centerline Arc Length Definition
-    Fzfl_sym = SX.sym('Fzfl_sym')
-    Fzfr_sym = SX.sym('Fzfr_sym')
-    Fzrl_sym = SX.sym('Fzrl_sym')
-    Fzrr_sym = SX.sym('Fzrr_sym')
 
     # Scaling - X_N [.] = X_scale [1/units]*X [units]
     force_scale = 1/(vehicle.m*vehicle.g)                                                                       # Force Scale in N^-1
@@ -117,6 +115,18 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     Lift = (1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(u**2)
     f_Lift = Function('f_Lift',[X_sym],[Lift])
 
+    # Quasi Steady Normal Force Estimation
+    Weq = (vehicle.Wf + vehicle.Wr)/2
+    Fzfl = (Drag*(vehicle.hcg - vehicle.hcp) + (vehicle.a - vehicle.d)*Lift + vehicle.m*vehicle.g*vehicle.d)/(2*vehicle.l) - (vehicle.m*f_ax(s)*vehicle.hcg)/(2*vehicle.l) - vehicle.Droll*vehicle.m*f_ay(s)*vehicle.hcg/Weq
+    Fzfr = (Drag*(vehicle.hcg - vehicle.hcp) + (vehicle.a - vehicle.d)*Lift + vehicle.m*vehicle.g*vehicle.d)/(2*vehicle.l) - (vehicle.m*f_ax(s)*vehicle.hcg)/(2*vehicle.l) + vehicle.Droll*vehicle.m*f_ay(s)*vehicle.hcg/Weq
+    Fzrl = ((vehicle.m*vehicle.g - Lift)*(vehicle.l - vehicle.d) - vehicle.a*Lift + Drag*(vehicle.hcp - vehicle.hcg))/(2*vehicle.l) + (vehicle.m*f_ax(s)*vehicle.hcg)/(2*vehicle.l) - (1 - vehicle.Droll)*vehicle.m*f_ay(s)*vehicle.hcg/Weq
+    Fzrr = ((vehicle.m*vehicle.g - Lift)*(vehicle.l - vehicle.d) - vehicle.a*Lift + Drag*(vehicle.hcp - vehicle.hcg))/(2*vehicle.l) + (vehicle.m*f_ax(s)*vehicle.hcg)/(2*vehicle.l) + (1 - vehicle.Droll)*vehicle.m*f_ay(s)*vehicle.hcg/Weq
+    
+    f_Fzfl = Function('f_Fzfl',[X_sym,s],[Fzfl])
+    f_Fzfr = Function('f_Fzfr',[X_sym,s],[Fzfr])
+    f_Fzrl = Function('f_Fzrl',[X_sym,s],[Fzrl])
+    f_Fzrr = Function('f_Fzrr',[X_sym,s],[Fzrr])
+
     # Tire Contact Patch Velocities in Vehicle Frame
     # Rear Right Tire
     u_rr = u + (vehicle.Wr/2)*psi_dot
@@ -144,24 +154,16 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     tire_model = get_tire_model(name)
 
     # Rear Right Tire Forces
-    Fxrr,Fyrr,Mzrr,rrr = tire_model(u_rr,O_rr,alpha_rr,Fzrr_sym,vehicle)
+    Fxrr,Fyrr,Mzrr,rrr = tire_model(u_rr,O_rr,alpha_rr,Fzrr,vehicle)
 
     # Rear Left Tire Forces
-    Fxrl,Fyrl,Mzrl,rrl = tire_model(u_rl,O_rl,alpha_rl,Fzrl_sym,vehicle)
+    Fxrl,Fyrl,Mzrl,rrl = tire_model(u_rl,O_rl,alpha_rl,Fzrl,vehicle)
 
     # Front Right Tire Forces
-    Fxfr,Fyfr,Mzfr,rfr = tire_model(u_fr,O_fr,alpha_fr,Fzfr_sym,vehicle)
+    Fxfr,Fyfr,Mzfr,rfr = tire_model(u_fr,O_fr,alpha_fr,Fzfr,vehicle)
     
     # Front Left Tire Forces
-    Fxfl,Fyfl,Mzfl,rfl = tire_model(u_fl,O_fl,alpha_fl,Fzfl_sym,vehicle)
-
-    # Normal Force 
-    Ffl = -vehicle.d*(Lift - vehicle.m*vehicle.g)/(2*vehicle.l) - (vehicle.Droll*vehicle.hcg*(Fyrl + Fyrr + (Fyfl + Fyfr)*cos(delta) + (Fxfl + Fxfr)*sin(delta)))/(vehicle.Droll*(vehicle.Wf - vehicle.Wr) + vehicle.Wr) - ((Fxrl + Fxrr)*vehicle.hcg - vehicle.a*Lift + Drag*(vehicle.hcp - vehicle.hcg) - (Fxfl + Fxfr)*vehicle.hcg*cos(delta) + (Fyfl + Fyfr)*vehicle.hcg*sin(delta))/(2*vehicle.l)
-    Ffr = (vehicle.d*(vehicle.m*vehicle.g - Lift))/(2*vehicle.l) + (2*vehicle.Droll*vehicle.hcg*(Fyrl + Fyrr + (Fyfl + Fyfr)*cos(delta) + (Fxfl + Fxfr)*sin(delta)))/(vehicle.Droll*(vehicle.Wf - vehicle.Wr) + vehicle.Wr) + ((vehicle.hcg - vehicle.hcp)*Drag - (Fxrl + Fxrr)*vehicle.hcg + vehicle.a*Lift + (Fxfl + Fxfr)*vehicle.hcg*cos(delta) - (Fyfl + Fyfr)*vehicle.hcg*sin(delta))/(vehicle.l)
-    Frl = ((vehicle.d - vehicle.l)*(Lift - vehicle.m*vehicle.g))/(2*vehicle.l) + (2*vehicle.hcg*(vehicle.Droll - 1)*(Fyrl + Fyrr + (Fyfl + Fyfr)*cos(delta) + (Fxfl + Fxfr)*sin(delta)))/(vehicle.Droll*(vehicle.Wf - vehicle.Wr) + vehicle.Wr) + (Drag*(vehicle.hcp - vehicle.hcg) + (Fxrl + Fxrr)*vehicle.hcg - Lift*vehicle.a - (Fxfl + Fxfr)*vehicle.hcg*cos(delta) + (Fyfl + Fyfr)*vehicle.hcg*sin(delta))/(vehicle.l)
-    Frr = ((vehicle.d - vehicle.l)*(Lift - vehicle.m*vehicle.g))/(2*vehicle.l) - (2*vehicle.hcg*(vehicle.Droll - 1)*(Fyrl + Fyrr + (Fyfl + Fyfr)*cos(delta) + (Fxfl + Fxfr)*sin(delta)))/(vehicle.Droll*(vehicle.Wf - vehicle.Wr) + vehicle.Wr) + (Drag*(vehicle.hcp - vehicle.hcg) + (Fxrl + Fxrr)*vehicle.hcg -  Lift*vehicle.a - (Fxfl + Fxfr)*vehicle.hcg*cos(delta) + (Fyfl + Fyfr)*vehicle.hcg*sin(delta))/(vehicle.l)
-    
-    f_Fz_update = Function('f_Fz_update',[X_sym,U_sym,s,Fzfl_sym,Fzfr_sym,Fzrl_sym,Fzrr_sym],[Ffl,Ffr,Frl,Frr])
+    Fxfl,Fyfl,Mzfl,rfl = tire_model(u_fl,O_fl,alpha_fl,Fzfl,vehicle)
 
     # Dynamics ODE Definition
     s_dot = (1/length_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv)
@@ -176,73 +178,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     O_rr_N_dot = (angle_scale/(time_scale**2))*(Md_rr - Fxrr*rrr)*(1/vehicle.Irr)
 
     ODE = vertcat(1/s_dot, n_N_dot/s_dot, psi_N_dot/s_dot,psi_ddot_N/s_dot, u_N_dot/s_dot, v_N_dot/s_dot, O_fl_N_dot/s_dot, O_fr_N_dot/s_dot, O_rl_N_dot/s_dot, O_rr_N_dot/s_dot)
-    f_dynamics = Function('f_dynamics',[X_sym,U_sym,s,Fzfl_sym,Fzfr_sym,Fzrl_sym,Fzrr_sym],[ODE])
-
-#==========================================================================================================================================================================================================================
-# PHASE 1 — Numeric pre-scan over warm-start solution to find worst-case iterations needed
-# state/ctrl are numeric here so float() works and convergence can be checked
-    print("Running numeric pre-scan to find worst-case Fz iterations...")
-    max_itr_needed = 0
- 
-    for k in range(N):
-        s_current = s_grid[k]
- 
-        # Build numeric state vector from warm-start
-        state_num = np.array([
-            x0_ini.time_opt[k] * time_scale,
-            x0_ini.n_opt[k]    * length_scale,
-            float(f_theta(s_grid[k])) * angle_scale,
-            x0_ini.u_opt[k] * float(f_kappa(s_grid[k])) * (angle_scale / time_scale),  # psi_dot guess
-            x0_ini.u_opt[k] * speed_scale,
-            x0_ini.v_opt[k] * speed_scale,
-            (x0_ini.u_opt[k] / vehicle.R) * (angle_scale / time_scale),                # O_fl
-            (x0_ini.u_opt[k] / vehicle.R) * (angle_scale / time_scale),                # O_fr
-            (x0_ini.u_opt[k] / vehicle.R) * (angle_scale / time_scale),                # O_rl
-            (x0_ini.u_opt[k] / vehicle.R) * (angle_scale / time_scale),                # O_rr
-        ])
- 
-        ctrl_num = np.array([
-            0,                                                                           # delta
-            (x0_ini.F_d_opt[k] * vehicle.R / 4) * force_scale * length_scale,          # Md_fl
-            (x0_ini.F_d_opt[k] * vehicle.R / 4) * force_scale * length_scale,          # Md_fr
-            (x0_ini.F_d_opt[k] * vehicle.R / 4) * force_scale * length_scale,          # Md_rl
-            (x0_ini.F_d_opt[k] * vehicle.R / 4) * force_scale * length_scale,          # Md_rr
-        ])
- 
-        # Quasi-static Fz initialization
-        u_num    = x0_ini.u_opt[k]
-        ay_approx = u_num**2 * float(f_kappa(s_current))
-        Fz_front = vehicle.m*vehicle.g*vehicle.d / vehicle.l
-        Fz_rear  = vehicle.m*vehicle.g*(vehicle.l - vehicle.d) / vehicle.l
- 
-        Fzfl_k = Fz_front/2 - vehicle.m*ay_approx*vehicle.hcg / (2*vehicle.Wf)
-        Fzfr_k = Fz_front/2 + vehicle.m*ay_approx*vehicle.hcg / (2*vehicle.Wf)
-        Fzrl_k = Fz_rear/2  - vehicle.m*ay_approx*vehicle.hcg / (2*vehicle.Wr)
-        Fzrr_k = Fz_rear/2  + vehicle.m*ay_approx*vehicle.hcg / (2*vehicle.Wr)
- 
-        # Convergence loop — numeric, float() safe
-        for y in range(50):
-            Fzfl_new, Fzfr_new, Fzrl_new, Fzrr_new = f_Fz_update(
-                state_num, ctrl_num, s_current,
-                Fzfl_k, Fzfr_k, Fzrl_k, Fzrr_k)
- 
-            err = np.max(np.abs([
-                float(Fzfl_new - Fzfl_k),
-                float(Fzfr_new - Fzfr_k),
-                float(Fzrl_new - Fzrl_k),
-                float(Fzrr_new - Fzrr_k)
-            ]))
- 
-            Fzfl_k, Fzfr_k, Fzrl_k, Fzrr_k = Fzfl_new, Fzfr_new, Fzrl_new, Fzrr_new
- 
-            if err < tol:
-                max_itr_needed = max(max_itr_needed, y+1)
-                break
-        else:
-            print(f"  Warning: Fz did not converge at node k={k}, err={err:.4f} N")
- 
-    print(f"Worst-case iterations needed across all nodes: {max_itr_needed}")
-
+    f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 #==========================================================================================================================================================================================================================
 # Cost Function & Constraint Definition
     # Cost Function
@@ -275,24 +211,13 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         s_current = s_grid[k]
         state = X[:,k]
         ctrl = U[:,k]
-        ay_approx = state[4]**2*f_kappa(s_current)
-        Fz_front = vehicle.m*vehicle.g*vehicle.d/vehicle.l - vehicle.a*f_Lift(state)/vehicle.l
-        Fz_rear  = vehicle.m*vehicle.g*(vehicle.l - vehicle.d)/vehicle.l - (vehicle.l - vehicle.a)*f_Lift(state)/vehicle.l
-        
-        Fzfl_k = Fz_front/2 - vehicle.m*ay_approx*vehicle.hcg/(2*vehicle.Wf)
-        Fzfr_k = Fz_front/2 + vehicle.m*ay_approx*vehicle.hcg/(2*vehicle.Wf)
-        Fzrl_k = Fz_rear/2  - vehicle.m*ay_approx*vehicle.hcg/(2*vehicle.Wr)
-        Fzrr_k = Fz_rear/2  + vehicle.m*ay_approx*vehicle.hcg/(2*vehicle.Wr)
-
-        for _ in range(max_itr_needed):
-            Fzfl_k, Fzfr_k, Fzrl_k, Fzrr_k = f_Fz_update(state, ctrl,s_current,Fzfl_k,Fzfr_k,Fzrl_k,Fzrr_k)
 
         # Dynamics Definition
         # 4th Order Ranga Kutta Method for Discretization
-        k1 = f_dynamics(state,ctrl,s_current,Fzfl_k,Fzfr_k,Fzrl_k,Fzrr_k)
-        k2 = f_dynamics(state + (ds/2)*k1,ctrl,s_current + ds/2,Fzfl_k,Fzfr_k,Fzrl_k,Fzrr_k)
-        k3 = f_dynamics(state + (ds/2)*k2, ctrl,s_current + ds/2,Fzfl_k,Fzfr_k,Fzrl_k,Fzrr_k)
-        k4 = f_dynamics(state + (ds)*k3, ctrl,s_grid[k+1],Fzfl_k,Fzfr_k,Fzrl_k,Fzrr_k)
+        k1 = f_dynamics(state,ctrl,s_current)
+        k2 = f_dynamics(state + (ds/2)*k1,ctrl,s_current + ds/2)
+        k3 = f_dynamics(state + (ds/2)*k2, ctrl,s_current + ds/2)
+        k4 = f_dynamics(state + (ds)*k3, ctrl,s_grid[k+1])
         state_next = state + (ds/6)*(k1 + 2*k2 + 2*k3 + k4)
 
         # Dynamics Constraint Definition
@@ -418,3 +343,5 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
             x0[idx_delta] = 0
 
     return states, cost, g, lbg, ubg, lbx, ubx, x0
+
+
