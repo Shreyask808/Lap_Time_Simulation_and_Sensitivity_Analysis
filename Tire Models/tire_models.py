@@ -37,7 +37,7 @@ def combined_brush_tire_model(u,omega,alpha,Fz,vehicle):
     kappa = (r*omega - (u + eps))/(u + eps)
     sigma_x = kappa/(1 + kappa)
     sigma_y = tan(alpha)/(1 + kappa)
-    sigma = sqrt(sigma_x**2 + sigma_y**2)
+    sigma = sqrt(sigma_x**2 + sigma_y**2 + 1e-8)
 
     # Adhesion Length Estimation
     ad_len = 2*a - ((Cp*sigma*a**2)/(mu0*w*Pmax))
