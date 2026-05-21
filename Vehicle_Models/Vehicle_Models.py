@@ -45,8 +45,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     f_nl = ca.interpolant('f_nl','linear',[track_data.arc_s.tolist()],track_data.nl.tolist())
     f_nr = ca.interpolant('f_nr','linear',[track_data.arc_s.tolist()],track_data.nr.tolist())
     f_theta = ca.interpolant('f_theta','linear',[track_data.arc_s.tolist()],track_data.theta.tolist())
-    f_ax = ca.interpolant('f_ax','linear',x0_ini.s_grid_opt.tolist(),x0_ini.ax_opt.tolist)
-    f_ay = ca.interpolant('f_ay','linear',x0_ini.s_grid_opt.tolist(),x0_ini.ay_opt.tolist)
+    f_ax = ca.interpolant('f_ax','linear',[x0_ini.s_grid_opt[:-1].tolist()], x0_ini.ax_opt.tolist())
+    f_ay = ca.interpolant('f_ay','linear',[x0_ini.s_grid_opt[:-1].tolist()], x0_ini.ay_opt.tolist())
 
 # States Definition
     X = SX.sym('X',n_states,N+1)
@@ -154,16 +154,16 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     tire_model = get_tire_model(name)
 
     # Rear Right Tire Forces
-    Fxrr,Fyrr,Mzrr,rrr = tire_model(u_rr,O_rr,alpha_rr,Fzrr,vehicle)
+    Fxrr,Fyrr,Mzrr,rrr = tire_model(u_rr,O_rr,alpha_rr,f_Fzrr([X_sym,s]),vehicle)
 
     # Rear Left Tire Forces
-    Fxrl,Fyrl,Mzrl,rrl = tire_model(u_rl,O_rl,alpha_rl,Fzrl,vehicle)
+    Fxrl,Fyrl,Mzrl,rrl = tire_model(u_rl,O_rl,alpha_rl,f_Fzrl([X_sym,s]),vehicle)
 
     # Front Right Tire Forces
-    Fxfr,Fyfr,Mzfr,rfr = tire_model(u_fr,O_fr,alpha_fr,Fzfr,vehicle)
+    Fxfr,Fyfr,Mzfr,rfr = tire_model(u_fr,O_fr,alpha_fr,f_Fzfr([X_sym,s]),vehicle)
     
     # Front Left Tire Forces
-    Fxfl,Fyfl,Mzfl,rfl = tire_model(u_fl,O_fl,alpha_fl,Fzfl,vehicle)
+    Fxfl,Fyfl,Mzfl,rfl = tire_model(u_fl,O_fl,alpha_fl,f_Fzfl([X_sym,s]),vehicle)
 
     # Dynamics ODE Definition
     s_dot = (1/length_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv)
