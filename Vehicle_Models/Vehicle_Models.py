@@ -159,8 +159,13 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     Fxfl,Fyfl,Mzfl,rfl = tire_model(u_fl,O_fl,alpha_fl,Fzfl,vehicle)
 
     # Normal Force 
-    Ffl = -vehicle.d*(Lift - vehicle.m*vehicle.g)/(2*vehicle.l) - (vehicle.Droll*vehicle.hcg*(Fyrl + Fyrr + (Fyfl + Fyfr)*cos(delta) + (Fxfl + Fxfr)*sin(delta)))/(vehicle.Droll*(vehicle.Wf - vehicle.Wr) + vehicle.Wr) - ((Fxrl + Fxrr)*vehicle.hcg - vehicle.a*Lift)/(2*vehicle.l)
+    Ffl = -vehicle.d*(Lift - vehicle.m*vehicle.g)/(2*vehicle.l) - (vehicle.Droll*vehicle.hcg*(Fyrl + Fyrr + (Fyfl + Fyfr)*cos(delta) + (Fxfl + Fxfr)*sin(delta)))/(vehicle.Droll*(vehicle.Wf - vehicle.Wr) + vehicle.Wr) - ((Fxrl + Fxrr)*vehicle.hcg - vehicle.a*Lift + Drag*(vehicle.hcp - vehicle.hcg) - (Fxfl + Fxfr)*vehicle.hcg*cos(delta) + (Fyfl + Fyfr)*vehicle.hcg*sin(delta))/(2*vehicle.l)
+    f_Ffl = Function('f_Ffl',[X_sym,U_sym,s],[Ffl])
 
+    Ffr = (vehicle.d*(vehicle.m*vehicle.g - Lift))/(2*vehicle.l) + (2*vehicle.Droll*vehicle.hcg*(Fyrl + Fyrr + (Fyfl + Fyfr)*cos(delta) + (Fxfl + Fxfr)*sin(delta)))/(vehicle.Droll*(vehicle.Wf - vehicle.Wr) + vehicle.Wr) + ((vehicle.hcg - vehicle.hcp)*Drag - (Fxrl + Fxrr)*vehicle.hcg + vehicle.a*Lift + (Fxfl + Fxfr)*vehicle.hcg*cos(delta) - (Fyfl + Fyfr)*vehicle.hcg*sin(delta))/(vehicle.l)
+    f_Ffr = Function('f_Ffr',[X_sym,U_sym,s],[Ffr])
+
+    
     # Dynamics ODE Definition
     s_dot = (1/length_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv)
     n_N_dot = (length_scale/time_scale)*(u*sin(xi) + v*cos(xi))
