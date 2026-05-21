@@ -22,7 +22,8 @@ plt.close('all')
 vehicle = SimpleNamespace()
 vehicle.l = 3.6                                                             # Wheelbase in m
 vehicle.d = 1.95                                                            # Distance between rear axle and cg in m
-vehicle.h = 0.28                                                            # Height of the cg from ground in m
+vehicle.hcg = 0.28                                                          # Height of the cg from ground in m
+vehicle.hcp = 0.20                                                          # Height of the cp from ground in m
 vehicle.a = 0.5                                                             # Position of Center of Pressure (cp) behind cg in m
 vehicle.Wf = 1.7                                                            # Front Trackwidth in m
 vehicle.Wr = 1.7                                                            # Rear Trackwidth in m
