@@ -52,7 +52,7 @@ vehicle.w = 0.305                                                           # Ti
 vehicle.Cp = 4e6                                                            # Tire stiffness per unit length in N/m^2
 vehicle.mu0 = 1.6                                                           # Static friction coefficient [.]
 vehicle.mu = 0.6                                                            # Sliding friction coefficient [.]
-vehicle.kv = 1e6                                                            # Vertical stiffness of the tire in N.m
+vehicle.kv = 1e9                                                            # Vertical stiffness of the tire in N.m
 vehicle.alpha_max = d=math.radians(7.0)                                      # Maximum tire slip angle in rad
 vehicle.Crr = 0                                                             # Tire rolling resistance coefficient [.]
 
