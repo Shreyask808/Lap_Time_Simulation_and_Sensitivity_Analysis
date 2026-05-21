@@ -24,7 +24,7 @@ matplotlib.use('Qt5Agg') # Or 'TkAgg' if you don't have Qt installed
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Vehicle_Models'))
-from Seven_DOF_Handling_Model_2D import Seven_DOF_Handling_Model_2D
+from Vehicle_Models import Seven_DOF_Handling_Model_2D
 os.system('cls' if os.name == 'nt' else 'clear')
 plt.close('all')
 
@@ -262,6 +262,8 @@ U_opt = full_sol[n_x_total:].reshape((2, N), order='F')
 print(f"Shape of X_opt is: {X_opt.shape}")
 print(f"Shape of U_opt is: {U_opt.shape}")
 
+kappa = np.array([float(f_kappa(s)) for s in s_grid[:-1]])
+drag = np.array([float(f_Drag(s)) for s in s_grid[:-1]])
 time_opt = X_opt[0,:]/time_scale
 n_opt = X_opt[1,:]/length_scale
 u_opt = X_opt[2,:]/speed_scale
@@ -271,6 +273,9 @@ F_d_opt = U_opt[0,:]/force_scale
 F_n_opt = U_opt[1,:]/force_scale
 Power_opt = F_d_opt*u_opt[:-1]
 
+ax_opt = ((F_d_opt - drag)/vehicle.m + v_opt[:-1]*u_opt[:-1]*kappa/(1 - n_opt[:-1]*kappa))
+ay_opt = (F_n_opt/vehicle.m - (u_opt[:-1]**2)*kappa/(1 - n_opt[:-1]*kappa))
+
 x0_ini = SimpleNamespace()
 x0_ini.time_opt = time_opt
 x0_ini.n_opt = n_opt
@@ -278,6 +283,8 @@ x0_ini.u_opt = u_opt
 x0_ini.v_opt = v_opt
 x0_ini.F_d_opt = F_d_opt
 x0_ini.F_n_opt = F_n_opt
+x0_ini.ax_opt = ax_opt
+x0_ini.ay_opt = ay_opt
 
 print(f"Optimized Lap Time is: {time_opt[-1]}")
 
