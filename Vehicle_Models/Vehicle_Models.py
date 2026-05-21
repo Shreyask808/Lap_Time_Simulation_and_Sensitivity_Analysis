@@ -117,8 +117,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     # Aerodynamic Forces
     Drag = -(1/2)*vehicle.Cd*vehicle.rho*vehicle.A*(u**2)
     f_Drag = Function('f_Drag',[X_sym],[Drag])
-    Downforce = (1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(u**2)
-    f_Downforce = Function('f_Downforce',[X_sym],[Downforce])
+    Lift = (1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(u**2)
+    f_Lift = Function('f_Lift',[X_sym],[Lift])
 
     # Tire Contact Patch Velocities in Vehicle Frame
     # Rear Right Tire
@@ -158,6 +158,9 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     # Front Left Tire Forces
     Fxfl,Fyfl,Mzfl,rfl = tire_model(u_fl,O_fl,alpha_fl,Fzfl,vehicle)
 
+    # Normal Force 
+    Ffl = -vehicle.d*(Lift - vehicle.m*vehicle.g)/(2*vehicle.l) - (vehicle.Droll*vehicle.hcg*(Fyrl + Fyrr + (Fyfl + Fyfr)*cos(delta) + (Fxfl + Fxfr)*sin(delta)))/(vehicle.Droll*(vehicle.Wf - vehicle.Wr) + vehicle.Wr) - ((Fxrl + Fxrr)*vehicle.hcg - vehicle.a*Lift)/(2*vehicle.l)
+
     # Dynamics ODE Definition
     s_dot = (1/length_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv)
     n_N_dot = (length_scale/time_scale)*(u*sin(xi) + v*cos(xi))
@@ -184,7 +187,6 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     e2 = 1e-6
     e3 = 1e-6
     e4 = 1e-6
-    slack_penalty = 1e-4
 
     # Dynamics Constraints
     g_dynamics = []
