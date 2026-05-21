@@ -20,7 +20,7 @@ import casadi as ca
 from casadi import *
 import matplotlib
 import pickle
-matplotlib.use('Qt5Agg') # Or 'TkAgg' if you don't have Qt installed
+matplotlib.use('Qt5Agg')
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 os.system('cls' if os.name == 'nt' else 'clear')
