@@ -263,7 +263,7 @@ print(f"Shape of X_opt is: {X_opt.shape}")
 print(f"Shape of U_opt is: {U_opt.shape}")
 
 kappa = np.array([float(f_kappa(s)) for s in s_grid[:-1]])
-drag = np.array([float(f_Drag(s)) for s in s_grid[:-1]])
+drag = np.array([float(f_Drag(X_opt[:,k])) for k in range(N)])
 time_opt = X_opt[0,:]/time_scale
 n_opt = X_opt[1,:]/length_scale
 u_opt = X_opt[2,:]/speed_scale
@@ -305,6 +305,32 @@ z_opt = np.array(f_zc(s_grid)).flatten() + n_opt * np.array(f_normal3(s_grid)).f
 
 #%%
 #====================================================================================================================================================================================================================
+fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
+
+# Longitudinal Acceleration
+ax1.plot(s_grid[:-1],ax_opt,color='black')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Longitudinal Acceleration [m/s^2]')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='red')
+ax1.legend()
+
+plt.tight_layout()
+plt.show()
+
+fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
+
+# Longitudinal Acceleration
+ax1.plot(s_grid[:-1],ay_opt,color='black')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Lateral Acceleration [m/s^2]')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='red')
+ax1.legend()
+
+plt.tight_layout()
+plt.show()
+
 
 STATES,COST,G,LBG,UBG,LBX,UBX,X0 = Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini)
 
@@ -314,12 +340,7 @@ print("Building NLP graph... this may take several minutes")
 opts = {'ipopt': {
     'max_iter': 4000,
     'print_level': 5,
-    'mu_strategy': 'adaptive',
-    'warm_start_init_point': 'yes',       # add this
-    'warm_start_bound_push': 1e-6,
-    'warm_start_mult_bound_push': 1e-6,
-    'bound_push': 1e-6,                   # prevent x0 from being on bounds
-    'bound_frac': 1e-6,
+    'mu_strategy': 'adaptive'
 }}
 print("Compiling solver...")
 solver = nlpsol('solver', 'ipopt', nlp, opts)
