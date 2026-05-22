@@ -57,7 +57,11 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     X_sym = SX.sym('X_sym',n_states)                                                                            # Symbolic State Definition
     U_sym = SX.sym('U_sym',u_states)                                                                            # Symbolic Control Input Definition
     s = SX.sym('s')                                                                                             # Symbolic Centerline Arc Length Definition
-
+    Fzfl_sym = SX.sym('Fzfl_sym')
+    Fzfr_sym = SX.sym('Fzfr_sym')
+    Fzrl_sym = SX.sym('Fzrl_sym')
+    Fzrr_sym = SX.sym('Fzrr_sym')
+    
     # Scaling - X_N [.] = X_scale [1/units]*X [units]
     force_scale = 1/(vehicle.m*vehicle.g)                                                                       # Force Scale in N^-1
     length_scale = 1/vehicle.l                                                                                  # Length Scale in m^-1
@@ -154,16 +158,16 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     tire_model = get_tire_model(name)
 
     # Rear Right Tire Forces
-    Fxrr,Fyrr,Mzrr,rrr = tire_model(u_rr,O_rr,alpha_rr,f_Fzrr([X_sym,s]),vehicle)
+    Fxrr,Fyrr,Mzrr,rrr = tire_model(u_rr,O_rr,alpha_rr,Fzrr,vehicle)
 
     # Rear Left Tire Forces
-    Fxrl,Fyrl,Mzrl,rrl = tire_model(u_rl,O_rl,alpha_rl,f_Fzrl([X_sym,s]),vehicle)
+    Fxrl,Fyrl,Mzrl,rrl = tire_model(u_rl,O_rl,alpha_rl,Fzrl,vehicle)
 
     # Front Right Tire Forces
-    Fxfr,Fyfr,Mzfr,rfr = tire_model(u_fr,O_fr,alpha_fr,f_Fzfr([X_sym,s]),vehicle)
+    Fxfr,Fyfr,Mzfr,rfr = tire_model(u_fr,O_fr,alpha_fr,Fzfr,vehicle)
     
     # Front Left Tire Forces
-    Fxfl,Fyfl,Mzfl,rfl = tire_model(u_fl,O_fl,alpha_fl,f_Fzfl([X_sym,s]),vehicle)
+    Fxfl,Fyfl,Mzfl,rfl = tire_model(u_fl,O_fl,alpha_fl,Fzfl,vehicle)
 
     # Dynamics ODE Definition
     s_dot = (1/length_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv)
@@ -178,7 +182,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     O_rr_N_dot = (angle_scale/(time_scale**2))*(Md_rr - Fxrr*rrr)*(1/vehicle.Irr)
 
     ODE = vertcat(1/s_dot, n_N_dot/s_dot, psi_N_dot/s_dot,psi_ddot_N/s_dot, u_N_dot/s_dot, v_N_dot/s_dot, O_fl_N_dot/s_dot, O_fr_N_dot/s_dot, O_rl_N_dot/s_dot, O_rr_N_dot/s_dot)
-    f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
+    f_dynamics = Function('f_dynamics',[X_sym,U_sym,s,Fzfl_sym,Fzfr_sym,Fzrl_sym,Fzrr_sym],[ODE])
 #==========================================================================================================================================================================================================================
 # Cost Function & Constraint Definition
     # Cost Function
@@ -214,10 +218,10 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
 
         # Dynamics Definition
         # 4th Order Ranga Kutta Method for Discretization
-        k1 = f_dynamics(state,ctrl,s_current)
-        k2 = f_dynamics(state + (ds/2)*k1,ctrl,s_current + ds/2)
-        k3 = f_dynamics(state + (ds/2)*k2, ctrl,s_current + ds/2)
-        k4 = f_dynamics(state + (ds)*k3, ctrl,s_grid[k+1])
+        k1 = f_dynamics(state,ctrl,s_current,f_Fzfl(state,s_current),f_Fzfr(state,s_current),f_Fzrl(state,s_current),f_Fzrr(state,s_current))
+        k2 = f_dynamics(state + (ds/2)*k1,ctrl,s_current + ds/2,f_Fzfl(state + (ds/2)*k1,s_current+ ds/2),f_Fzfr(state + (ds/2)*k1,s_current+ ds/2),f_Fzrl(state + (ds/2)*k1,s_current+ ds/2),f_Fzrr(state + (ds/2)*k1,s_current+ ds/2))
+        k3 = f_dynamics(state + (ds/2)*k2, ctrl,s_current + ds/2,f_Fzfl(state + (ds/2)*k2,s_current+ ds/2),f_Fzfr(state + (ds/2)*k2,s_current+ ds/2),f_Fzrl(state + (ds/2)*k2,s_current+ ds/2),f_Fzrr(state + (ds/2)*k2,s_current+ ds/2))
+        k4 = f_dynamics(state + (ds)*k3, ctrl,s_grid[k+1],f_Fzfl(state + (ds)*k3,s_grid[k+1]),f_Fzfr(state + (ds)*k3,s_grid[k+1]),f_Fzrl(state + (ds)*k3,s_grid[k+1]),f_Fzrr(state + (ds)*k3,s_grid[k+1]))
         state_next = state + (ds/6)*(k1 + 2*k2 + 2*k3 + k4)
 
         # Dynamics Constraint Definition
@@ -230,10 +234,10 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         lbg_time.append(1e-6)
         ubg_time.append(np.inf)
 
-        # Driving Power Constraint Definition
-        g_power.append(vehicle.peakdrivingpower - (1/(force_scale*speed_scale))*(state[6]*ctrl[1] + state[7]*ctrl[2] + state[8]*ctrl[3] + state[9]*ctrl[4]))
-        lbg_power.append(-np.inf)
-        ubg_power.append(0)
+        #  Power Constraint Definition
+        g_power.append((1/(force_scale*speed_scale))*(state[6]*ctrl[1] + state[7]*ctrl[2] + state[8]*ctrl[3] + state[9]*ctrl[4]))
+        lbg_power.append(vehicle.peakbrakingpower)
+        ubg_power.append(vehicle.peakdrivingpower)
 
         # Cost Function
         dt = (state_next[0] - state[0])/time_scale
@@ -256,18 +260,19 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
 
     g = vertcat(*g_dynamics, *g_time, *g_power, *g_end)
     lbg = vertcat(*lbg_dynamics, *lbg_time, *lbg_power, *lbg_end)
-    ubg = vertcat(*ubg_dynamics, *ubg_time, *ubg_power, *ubg_end)
+    ubg = vertcat(*ubg_dynamics, *ubg_time,*ubg_power, *ubg_end)
 
     #==========================================================================================================================================================================================================================
-    # States and Control Input Limits
-    lbx = np.full(states.shape, -np.inf)
-    ubx = np.full(states.shape, np.inf)
-    x0 = np.zeros(states.shape)
+    # Staes and Control Input Limits
+    lbx = np.full(states.numel(), -np.inf)
+    ubx = np.full(states.numel(), np.inf)
+    x0 = np.zeros(states.numel())
 
     for r in range(N+1):
         idx_t = r*n_states
         idx_n = r*n_states + 1
         idx_psi = r*n_states + 2
+        idx_psi_dot = r*n_states + 3
         idx_u = r*n_states + 4
         idx_v = r*n_states + 5
         idx_O_fl = r*n_states + 6
@@ -317,12 +322,15 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         x0[idx_n] = x0_ini.n_opt[r]*length_scale
         x0[idx_psi]  = float(f_theta(s_grid[r]))*angle_scale
         x0[idx_u] = x0_ini.u_opt[r]*speed_scale
-        x0[idx_v] = x0_ini.v_opt[r]*speed_scale
-        x0[idx_O_fl] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
-        x0[idx_O_fr] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
-        x0[idx_O_rl] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
-        x0[idx_O_rr] = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+        x0[idx_v] = 0
+        x0[idx_O_fl] = 0.9*(x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+        x0[idx_O_fr] = 0.9*(x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+        x0[idx_O_rl] = 0.9*(x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+        x0[idx_O_rr] = 0.9*(x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
 
+        psi_dot_guess = x0_ini.u_opt[r] * float(f_kappa(s_grid[r]))  # rad/s
+        x0[idx_psi_dot] = psi_dot_guess * (angle_scale / time_scale)
+        
         if r < N:
             lbx[idx_delta] = vehicle.delta_min*angle_scale
             ubx[idx_delta] = vehicle.delta_max*angle_scale
@@ -341,6 +349,11 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
 
            # Controls
             x0[idx_delta] = 0
+            # Inside the r < N block in Seven_DOF_Handling_Model_2D
+            x0[idx_Mdfl] = (x0_ini.F_d_opt[r] * vehicle.R / 4) * force_scale * length_scale
+            x0[idx_Mdfr] = (x0_ini.F_d_opt[r] * vehicle.R / 4) * force_scale * length_scale
+            x0[idx_Mdrl] = (x0_ini.F_d_opt[r] * vehicle.R / 4) * force_scale * length_scale
+            x0[idx_Mdrr] = (x0_ini.F_d_opt[r] * vehicle.R / 4) * force_scale * length_scale
 
     return states, cost, g, lbg, ubg, lbx, ubx, x0
 
