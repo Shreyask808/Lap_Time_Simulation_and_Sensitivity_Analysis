@@ -28,7 +28,8 @@ def combined_brush_tire_model(u,omega,alpha,Fz,vehicle):
     Cp = vehicle.Cp
     kv = vehicle.kv
     alpha_max = vehicle.alpha_max
-    
+    Fz = ca.fmax(Fz, 50.0)
+    ...
     # Effective Radius Calculation
     r = R - (Fz/kv)
     a = sqrt(R**2 - r**2 + 1e-6)
