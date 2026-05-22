@@ -21,7 +21,7 @@ plt.close('all')
 # Vehicle Dimension Data
 vehicle = SimpleNamespace()
 vehicle.l = 3.6                                                             # Wheelbase in m
-vehicle.d = 1.95                                                            # Distance between rear axle and cg in m
+vehicle.d = 1.65                                                            # Distance between rear axle and cg in m
 vehicle.hcg = 0.28                                                          # Height of the cg from ground in m
 vehicle.hcp = 0.20                                                          # Height of the cp from ground in m
 vehicle.a = 0.5                                                             # Position of Center of Pressure (cp) behind cg in m
@@ -51,8 +51,8 @@ vehicle.R = 0.360                                                           # Ti
 vehicle.w = 0.305                                                           # Tire width in m
 vehicle.Cp = 4e6                                                            # Tire stiffness per unit length in N/m^2
 vehicle.mu0 = 1.6                                                           # Static friction coefficient [.]
-vehicle.mu = 0.6                                                            # Sliding friction coefficient [.]
-vehicle.kv = 1e9                                                            # Vertical stiffness of the tire in N.m
+vehicle.mu = 1.1                                                            # Sliding friction coefficient [.]
+vehicle.kv = 2e5                                                            # Vertical stiffness of the tire in N.m
 vehicle.alpha_max = d=math.radians(7.0)                                      # Maximum tire slip angle in rad
 vehicle.Crr = 0                                                             # Tire rolling resistance coefficient [.]
 
