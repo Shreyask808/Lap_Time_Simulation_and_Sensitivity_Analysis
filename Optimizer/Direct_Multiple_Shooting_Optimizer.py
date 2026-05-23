@@ -24,7 +24,7 @@ matplotlib.use('Qt5Agg') # Or 'TkAgg' if you don't have Qt installed
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Vehicle_Models'))
-from Vehicle_Models import Seven_DOF_Handling_Model_2D
+from Seven_DOF_Handling_Model_2D import Seven_DOF_Handling_Model_2D
 os.system('cls' if os.name == 'nt' else 'clear')
 plt.close('all')
 
