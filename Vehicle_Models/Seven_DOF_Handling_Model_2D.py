@@ -209,8 +209,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     A = vertcat(horzcat(1,1,1,1),horzcat(vehicle.Wf/2,-vehicle.Wf/2,vehicle.Wr/2,-vehicle.Wr/2),horzcat((vehicle.d-vehicle.l),(vehicle.d-vehicle.l),vehicle.d,vehicle.d),horzcat((1-vehicle.Droll),(vehicle.Droll-1),-vehicle.Droll,vehicle.Droll))
     B_expr = vertcat(
     vehicle.m*vehicle.g + Downforce,
-    -vehicle.h*(Fyrl + Fyrr + (Fyfl+Fyfr)*cos(delta) + (Fxfl+Fxfr)*sin(delta)),
-    vehicle.a*Downforce + vehicle.h*(Fxrl + Fxrr + (Fxfr+Fxfl)*cos(delta) - (Fyfl+Fyfr)*sin(delta)),0)
+    -vehicle.hcg*(Fyrl + Fyrr + (Fyfl+Fyfr)*cos(delta) + (Fxfl+Fxfr)*sin(delta)),
+    vehicle.a*Downforce + vehicle.hcg*(Fxrl + Fxrr + (Fxfr+Fxfl)*cos(delta) - (Fyfl+Fyfr)*sin(delta)),0)
     f_B = Function('f_B', [X_sym, U_sym, s], [B_expr])
 
     # Nonlinear Programing Definition
@@ -237,10 +237,11 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         lbg_time.append(1e-6)
         ubg_time.append(np.inf)
 
-        # Driving Power Constraint Definition
-        g_power.append(vehicle.peakdrivingpower - (1/(force_scale*speed_scale))*(state[6]*ctrl[1] + state[7]*ctrl[2] + state[8]*ctrl[3] + state[9]*ctrl[4]))
-        lbg_power.append(-np.inf)
-        ubg_power.append(0)
+          #  Power Constraint Definition
+        g_power.append((1/(force_scale*speed_scale))*(state[6]*ctrl[1] + state[7]*ctrl[2] + state[8]*ctrl[3] + state[9]*ctrl[4]))
+        lbg_power.append(vehicle.peakbrakingpower)
+        ubg_power.append(vehicle.peakdrivingpower)
+
 
         # Normal Force Constraints
         force = (1/force_scale)*vertcat(ctrl[5],ctrl[6],ctrl[7],ctrl[8])
@@ -395,84 +396,5 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
             x0[idx_Fzfr] = (vehicle.m*vehicle.g/4)*force_scale
             x0[idx_Fzrl] = (vehicle.m*vehicle.g/4)*force_scale
             x0[idx_Fzrr] = (vehicle.m*vehicle.g/4)*force_scale
-
-            # Step 2 - iterate to find consistent Fz
-            for _ in range(10):
-                x_r     = x0[r*n_states:(r+1)*n_states].flatten()
-                u_r_vec = x0[n_states*(N+1) + r*u_states:n_states*(N+1) + (r+1)*u_states].flatten()
-
-                # Evaluate B at current Fz
-                B_val = np.array(f_B_check(x_r, u_r_vec, s_grid[r])).flatten()
-
-                # Solve A*Fz = B exactly
-                Fz_new = np.linalg.solve(A_num, B_val)
-                Fz_new = np.maximum(Fz_new, 0)
-
-                # Update x0
-                x0[idx_Fzfl] = Fz_new[0]*force_scale
-                x0[idx_Fzfr] = Fz_new[1]*force_scale
-                x0[idx_Fzrl] = Fz_new[2]*force_scale
-                x0[idx_Fzrr] = Fz_new[3]*force_scale
-
-            # Step 3 - compute torques from converged Fz
-            x_r     = x0[r*n_states:(r+1)*n_states].flatten()
-            u_r_vec = x0[n_states*(N+1) + r*u_states:n_states*(N+1) + (r+1)*u_states].flatten()
-
-            Fx_fl = float(f_Fxfl_val(x_r, u_r_vec))
-            Fx_fr = float(f_Fxfr_val(x_r, u_r_vec))
-            Fx_rl = float(f_Fxrl_val(x_r, u_r_vec))
-            Fx_rr = float(f_Fxrr_val(x_r, u_r_vec))
-            r_fl  = float(f_rfl_val(x_r, u_r_vec))
-            r_fr  = float(f_rfr_val(x_r, u_r_vec))
-            r_rl  = float(f_rrl_val(x_r, u_r_vec))
-            r_rr  = float(f_rrr_val(x_r, u_r_vec))
-
-            x0[idx_Mdfl] = (Fx_fl * r_fl) * (force_scale * length_scale)
-            x0[idx_Mdfr] = (Fx_fr * r_fr) * (force_scale * length_scale)
-            x0[idx_Mdrl] = (Fx_rl * r_rl) * (force_scale * length_scale)
-            x0[idx_Mdrr] = (Fx_rr * r_rr) * (force_scale * length_scale)
-
-    # ===== DIAGNOSTIC - place right before return =====
-    f_sim = Function('f_sim', [X_sym, U_sym, s], [ODE])
-    f_B_check = Function('f_B_check', [X_sym, U_sym, s], [B_expr])
-
-    A_num = np.array([
-        [1, 1, 1, 1],
-        [vehicle.Wf/2, -vehicle.Wf/2, vehicle.Wr/2, -vehicle.Wr/2],
-        [vehicle.d-vehicle.l, vehicle.d-vehicle.l, vehicle.d, vehicle.d],
-        [1-vehicle.Droll, vehicle.Droll-1, -vehicle.Droll, vehicle.Droll]
-    ])
-
-    print("\n========== DIAGNOSTICS ==========")
-    for k in range(3):
-        x_k   = x0[k*n_states:(k+1)*n_states].flatten()
-        u_k   = x0[n_states*(N+1) + k*u_states : n_states*(N+1) + (k+1)*u_states].flatten()
-        x_kp1 = x0[(k+1)*n_states:(k+2)*n_states].flatten()
-
-        k1 = np.array(f_sim(x_k, u_k, s_grid[k])).flatten()
-        k2 = np.array(f_sim(x_k + ds/2*k1, u_k, s_grid[k] + ds/2)).flatten()
-        k3 = np.array(f_sim(x_k + ds/2*k2, u_k, s_grid[k] + ds/2)).flatten()
-        k4 = np.array(f_sim(x_k + ds*k3,   u_k, s_grid[k+1])).flatten()
-        x_next_rk4 = x_k + (ds/6)*(k1 + 2*k2 + 2*k3 + k4)
-
-        dyn_residual  = x_kp1 - x_next_rk4
-        Fz_k          = np.array([u_k[5], u_k[6], u_k[7], u_k[8]]) / force_scale
-        B_val         = np.array(f_B_check(x_k, u_k, s_grid[k])).flatten()
-        force_residual = A_num @ Fz_k - B_val
-
-        print(f"\n--- k={k} ---")
-        print(f"  u={x_k[4]/speed_scale:.2f} m/s, "
-              f"v={x_k[5]/speed_scale:.3f} m/s, "
-              f"psi_dot={x_k[3]*(time_scale/angle_scale):.4f} rad/s, "
-              f"xi={x_k[2]/angle_scale - float(f_theta(s_grid[k])):.4f} rad")
-        print(f"  ODE k1:               {np.round(k1, 4)}")
-        print(f"  Dynamics residual:    {np.round(dyn_residual, 4)}")
-        print(f"  Max dyn residual:     {np.max(np.abs(dyn_residual)):.4e}  "
-              f"(worst state idx={np.argmax(np.abs(dyn_residual))})")
-        print(f"  Normal force residual:{np.round(force_residual, 4)}")
-        print(f"  Max force residual:   {np.max(np.abs(force_residual)):.4e}")
-
-    print("\n========== END DIAGNOSTICS ==========")
-    # ===== END DIAGNOSTIC =====
 
     return states, cost, g, lbg, ubg, lbx, ubx, x0
