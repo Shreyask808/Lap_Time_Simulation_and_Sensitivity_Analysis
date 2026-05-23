@@ -262,19 +262,21 @@ U_opt = full_sol[n_x_total:].reshape((2, N), order='F')
 print(f"Shape of X_opt is: {X_opt.shape}")
 print(f"Shape of U_opt is: {U_opt.shape}")
 
-kappa = np.array([float(f_kappa(s)) for s in s_grid[:-1]])
-drag = np.array([float(f_Drag(X_opt[:,k])) for k in range(N)])
+kappa = np.array([float(f_kappa(s)) for s in s_grid])
+drag = np.array([float(f_Drag(X_opt[:,k])) for k in range(N+1)])
 time_opt = X_opt[0,:]/time_scale
 n_opt = X_opt[1,:]/length_scale
 u_opt = X_opt[2,:]/speed_scale
 v_opt = X_opt[3,:]/speed_scale
 
 F_d_opt = U_opt[0,:]/force_scale
+F_d_opt = np.append(F_d_opt,F_d_opt[0])
 F_n_opt = U_opt[1,:]/force_scale
-Power_opt = F_d_opt*u_opt[:-1]
+F_n_opt = np.append(F_n_opt,F_n_opt[0])
+Power_opt = F_d_opt*u_opt
 
-ax_opt = ((F_d_opt - drag)/vehicle.m + v_opt[:-1]*u_opt[:-1]*kappa/(1 - n_opt[:-1]*kappa))
-ay_opt = (F_n_opt/vehicle.m - (u_opt[:-1]**2)*kappa/(1 - n_opt[:-1]*kappa))
+ax_opt = ((F_d_opt - drag)/vehicle.m + v_opt*u_opt*kappa/(1 - n_opt*kappa))
+ay_opt = (F_n_opt/vehicle.m - (u_opt**2)*kappa/(1 - n_opt*kappa))
 
 x0_ini = SimpleNamespace()
 x0_ini.s_grid_opt = s_grid
@@ -308,7 +310,7 @@ z_opt = np.array(f_zc(s_grid)).flatten() + n_opt * np.array(f_normal3(s_grid)).f
 fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
 
 # Longitudinal Acceleration
-ax1.plot(s_grid[:-1],ax_opt,color='black')
+ax1.plot(s_grid,ax_opt,color='black')
 ax1.set_xlabel('Track Centerline Arc Length [m]')
 ax1.set_ylabel('Longitudinal Acceleration [m/s^2]')
 ax1.grid(True, alpha=0.3)
@@ -321,7 +323,7 @@ plt.show()
 fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
 
 # Longitudinal Acceleration
-ax1.plot(s_grid[:-1],ay_opt,color='black')
+ax1.plot(s_grid,ay_opt,color='black')
 ax1.set_xlabel('Track Centerline Arc Length [m]')
 ax1.set_ylabel('Lateral Acceleration [m/s^2]')
 ax1.grid(True, alpha=0.3)
