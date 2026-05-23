@@ -45,8 +45,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     f_nl = ca.interpolant('f_nl','linear',[track_data.arc_s.tolist()],track_data.nl.tolist())
     f_nr = ca.interpolant('f_nr','linear',[track_data.arc_s.tolist()],track_data.nr.tolist())
     f_theta = ca.interpolant('f_theta','linear',[track_data.arc_s.tolist()],track_data.theta.tolist())
-    f_ax = ca.interpolant('f_ax','linear',[x0_ini.s_grid_opt[:-1].tolist()], x0_ini.ax_opt.tolist())
-    f_ay = ca.interpolant('f_ay','linear',[x0_ini.s_grid_opt[:-1].tolist()], x0_ini.ay_opt.tolist())
+    f_ax = ca.interpolant('f_ax','linear',[x0_ini.s_grid_opt.tolist()], x0_ini.ax_opt.tolist())
+    f_ay = ca.interpolant('f_ay','linear',[x0_ini.s_grid_opt.tolist()], x0_ini.ay_opt.tolist())
 
 # States Definition
     X = SX.sym('X',n_states,N+1)
@@ -141,18 +141,18 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     v_rl = v - (vehicle.d)*psi_dot
 
     # Front Left Tire
-    u_fl = u - (vehicle.Wf/2)*psi_dot
-    v_fl = v - (vehicle.l - vehicle.d)*psi_dot
+    u_fl = u*cos(delta) + v*sin(delta) - (vehicle.Wf/2)*cos(delta)*psi_dot + (vehicle.l - vehicle.d)*sin(delta)*psi_dot
+    v_fl = -u*sin(delta) + v*cos(delta) + (vehicle.Wf/2)*sin(delta)*psi_dot + (vehicle.l - vehicle.d)*cos(delta)*psi_dot
 
     # Front Right Tire
-    u_fr = u + (vehicle.Wf/2)*psi_dot
-    v_fr = v - (vehicle.l - vehicle.d)*psi_dot
+    u_fr = u*cos(delta) + v*sin(delta) + (vehicle.Wf/2)*cos(delta)*psi_dot + (vehicle.l - vehicle.d)*sin(delta)*psi_dot
+    v_fr = -u*sin(delta) + v*cos(delta) - (vehicle.Wf/2)*sin(delta)*psi_dot + (vehicle.l - vehicle.d)*cos(delta)*psi_dot
 
     # Tire Slip Angle Definition
-    alpha_rr = - ca.atan2(v_rr,u_rr)                                                                           # Rear Right Slip Angle in rad
+    alpha_rr = -ca.atan2(v_rr,u_rr)                                                                           # Rear Right Slip Angle in rad
     alpha_rl = -ca.atan2(v_rl,u_rl)                                                                            # Rear Left Slip Angle in rad
-    alpha_fr = -ca.atan2((-u_fr*sin(delta) + v_fr*cos(delta)),(u_fr*cos(delta) + v_fr*sin(delta)))             # Front Right Slip Angle in rad
-    alpha_fl = -ca.atan2((-u_fl*sin(delta) + v_fl*cos(delta)),(u_fl*cos(delta) + v_fl*sin(delta)))             # Front Left Slip Angle in rad
+    alpha_fl = -ca.atan2(v_fl,u_fl)                                                                            # Rear Left Slip Angle in rad
+    alpha_fr = -ca.atan2(v_fr,u_fr)                                                                            # Rear Left Slip Angle in rad
 
     # Tire Forces and Moments
     tire_model = get_tire_model(name)
@@ -170,12 +170,12 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
     Fxfl,Fyfl,Mzfl,rfl = tire_model(u_fl,O_fl,alpha_fl,Fzfl,vehicle)
 
     # Dynamics ODE Definition
-    s_dot = (1/length_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv)
+    s_dot = (1/time_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv)
     n_N_dot = (length_scale/time_scale)*(u*sin(xi) + v*cos(xi))
-    psi_N_dot = psi_dot_N
-    psi_ddot_N = (angle_scale/(time_scale**2))*(1/2)*(-2*vehicle.d*(Fyrl + Fyrr) + 2*(Mzfl + Mzfr + Mzrl + Mzrr) + (Fxrr - Fxrl)*vehicle.Wr + (2*(vehicle.d - vehicle.l)*(Fyfl + Fyfr) + vehicle.Wf*(Fxfr - Fxfl))*cos(delta) + (2*(vehicle.d - vehicle.l)*(Fxfl+Fxfr) + vehicle.Wf*(Fyfl - Fyfr))*sin(delta))*(1/vehicle.Iz)
-    u_N_dot = (speed_scale/time_scale)*(v*psi_dot + (Drag + Fxrl + Fxrr + Fxfl*cos(delta) + Fxfr*cos(delta) - Fyfl*sin(delta) - Fyfr*sin(delta))/vehicle.m)
-    v_N_dot = (speed_scale/time_scale)*(-u*psi_dot + (Fyrl + Fyrr + Fyfl*cos(delta) + Fyfr*cos(delta) + Fxfl*sin(delta) + Fxfr*sin(delta))/vehicle.m)
+    psi_N_dot = (angle_scale/time_scale)*psi_dot
+    psi_ddot_N = (angle_scale/(time_scale**2))*(((vehicle.Wf/2)*Fxrr - vehicle.d*Fyrr + Mzrr) - ((vehicle.Wr/2)*Fxrl + vehicle.d*Fyrl - Mzrl) + ((Fyfl*sin(delta) - Fxfl*cos(delta))*(vehicle.Wf/2) + (Fyfl*cos(delta) + Fxfl*sin(delta))*(vehicle.l - vehicle.d) + Mzfl) + ((Fxfr*cos(delta) - Fyfr*sin(delta))*(vehicle.Wf/2) + (Fxfr*sin(delta) + Fyfr*cos(delta))*(vehicle.l - vehicle.d) + Mzfr))
+    u_N_dot = (length_scale/(time_scale**2))*(v*psi_dot + (Fxrr + Fxrl + (Fxfl*cos(delta) - Fyfl*sin(delta)) + (Fxfr*cos(delta) - Fyfr*sin(delta)) - Drag)/(vehicle.m))
+    v_N_dot = (length_scale/(time_scale**2))*(-u*psi_dot + (Fyrr + Fyrl + (Fxfl*sin(delta) + Fyfl*cos(delta)) + (Fxfr*sin(delta) + Fyfr*cos(delta)))/(vehicle.m))
     O_fl_N_dot = (angle_scale/(time_scale**2))*(Md_fl - Fxfl*rfl)*(1/vehicle.Ifl)
     O_fr_N_dot = (angle_scale/(time_scale**2))*(Md_fr - Fxfr*rfr)*(1/vehicle.Ifr)
     O_rl_N_dot = (angle_scale/(time_scale**2))*(Md_rl - Fxrl*rrl)*(1/vehicle.Irl)
@@ -322,7 +322,7 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
         x0[idx_n] = x0_ini.n_opt[r]*length_scale
         x0[idx_psi]  = float(f_theta(s_grid[r]))*angle_scale
         x0[idx_u] = x0_ini.u_opt[r]*speed_scale
-        x0[idx_v] = 0
+        x0[idx_v] = x0_ini.v_opt[r]*speed_scale
         x0[idx_O_fl] = 0.9*(x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
         x0[idx_O_fr] = 0.9*(x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
         x0[idx_O_rl] = 0.9*(x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
@@ -348,7 +348,8 @@ def Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini):
             ubx[idx_Mdrr] = vehicle.peakdrivingtorque*force_scale*length_scale
 
            # Controls
-            x0[idx_delta] = 0
+            x0[idx_delta] = angle_scale*(f_kappa(s_grid[r]))/vehicle.l
+
             # Inside the r < N block in Seven_DOF_Handling_Model_2D
             x0[idx_Mdfl] = (x0_ini.F_d_opt[r] * vehicle.R / 4) * force_scale * length_scale
             x0[idx_Mdfr] = (x0_ini.F_d_opt[r] * vehicle.R / 4) * force_scale * length_scale
