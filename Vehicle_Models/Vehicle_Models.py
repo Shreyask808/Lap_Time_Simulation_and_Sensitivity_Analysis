@@ -186,6 +186,8 @@ xi    = psi - theta
 #==========================================================================
 Drag = -(1/2)*vehicle.Cd*vehicle.rho*vehicle.A*(u**2)
 Lift =  (1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(u**2)
+f_Lift = Function('f_Lift',[X_sym[4]],[Lift])
+f_Drag = Function('f_Drag',[X_sym[4]],[Drag])
 
 #==========================================================================
 # 11. CONTACT PATCH KINEMATICS
@@ -242,7 +244,7 @@ f_algebraic = Function('f_algebraic',[X_sym,U_sym],[mechanical_residual*force_sc
 #==========================================================================
 # 15. DYNAMICS ODE — using Fz_sym
 #==========================================================================
-s_dot = (1/time_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv)
+s_dot = (1/time_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv) + 1
 s_dot_safe = 0.5 * (s_dot + ca.sqrt(s_dot**2 + 1e-4))
 n_N_dot = (length_scale/time_scale)*(u*sin(xi) + v*cos(xi))
 psi_N_dot = (angle_scale/time_scale)*psi_dot
@@ -368,6 +370,10 @@ ubg = vertcat(*ubg_dynamics, *ubg_time, *ubg_power, *ubg_end)
 lbx = np.full(states.numel(), -np.inf)
 ubx = np.full(states.numel(),  np.inf)
 x0  = np.zeros(states.numel())
+Force_mag = 1.2
+Weq = 0.5*(vehicle.Wf + vehicle.Wr)
+Fr_static = (vehicle.l - vehicle.d)*(vehicle.m*vehicle.g)/(vehicle.l)
+Ff_static = vehicle.m*vehicle.g*vehicle.d/vehicle.l
 
 for r in range(N+1):
     idx_t       = r*n_states + 0
@@ -421,10 +427,10 @@ for r in range(N+1):
     x0[idx_psi]     = float(f_theta(s_grid[r]))*angle_scale
     x0[idx_u]       = x0_ini.u_opt[r]*speed_scale
     x0[idx_v]       = x0_ini.v_opt[r]*speed_scale
-    x0[idx_O_fl]    =1.1*(x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
-    x0[idx_O_fr]    = 1.1*(x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
-    x0[idx_O_rl]    = 1.1*(x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
-    x0[idx_O_rr]    = 1.1*(x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+    x0[idx_O_fl]    = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+    x0[idx_O_fr]    = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+    x0[idx_O_rl]    = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
+    x0[idx_O_rr]    = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
     x0[idx_psi_dot] = x0_ini.u_opt[r]*float(f_kappa(s_grid[r]))*(angle_scale/time_scale)
 
     if r < N:
@@ -439,6 +445,17 @@ for r in range(N+1):
         ubx[idx_Mdrl]  = vehicle.peakdrivingtorque*force_scale*length_scale
         lbx[idx_Mdrr]  = vehicle.peakbrakingtorque*force_scale*length_scale
         ubx[idx_Mdrr]  = vehicle.peakdrivingtorque*force_scale*length_scale
+        lbx[idx_Fzt_fl] = 0
+        ubx[idx_Fzt_fl] = max(float((force_scale*Force_mag)*((f_Drag(x0_ini.u_opt[r]*speed_scale)*(vehicle.hcg - vehicle.hcp) + (vehicle.a - vehicle.d)*f_Lift(x0_ini.u_opt[r]*speed_scale) + vehicle.m*vehicle.g*vehicle.d)/(2*vehicle.l) - vehicle.m*vehicle.hcg*x0_ini.ax_opt[r]/(2*vehicle.l) - vehicle.Droll*vehicle.m*x0_ini.ay_opt[r]*vehicle.hcg/Weq)),Ff_static*force_scale)
+
+        lbx[idx_Fzt_fr] = 0
+        ubx[idx_Fzt_fr] = max(float((force_scale*Force_mag)*((f_Drag(x0_ini.u_opt[r]*speed_scale)*(vehicle.hcg - vehicle.hcp) + (vehicle.a - vehicle.d)*f_Lift(x0_ini.u_opt[r]*speed_scale) + vehicle.m*vehicle.g*vehicle.d)/(2*vehicle.l) - vehicle.m*vehicle.hcg*x0_ini.ax_opt[r]/(2*vehicle.l) + vehicle.Droll*vehicle.m*x0_ini.ay_opt[r]*vehicle.hcg/Weq)),Ff_static*force_scale)
+
+        lbx[idx_Fzt_rl] = 0
+        ubx[idx_Fzt_rl] = max(float((force_scale*Force_mag)*(((vehicle.m*vehicle.g - f_Lift(x0_ini.u_opt[r]*speed_scale))*(vehicle.l - vehicle.d) - vehicle.a*f_Lift(x0_ini.u_opt[r]*speed_scale) + f_Drag(x0_ini.u_opt[r]*speed_scale)*(vehicle.hcp - vehicle.hcg))/(2*vehicle.l) + vehicle.m*vehicle.hcg*x0_ini.ax_opt[r]/(2*vehicle.l) - (1 - vehicle.Droll)*(vehicle.m*x0_ini.ay_opt[r]*vehicle.hcg)/(Weq))),Fr_static*force_scale)
+
+        lbx[idx_Fzt_rr] = 0
+        ubx[idx_Fzt_rr] = max(float((force_scale*Force_mag)*(((vehicle.m*vehicle.g - f_Lift(x0_ini.u_opt[r]*speed_scale))*(vehicle.l - vehicle.d) - vehicle.a*f_Lift(x0_ini.u_opt[r]*speed_scale) + f_Drag(x0_ini.u_opt[r]*speed_scale)*(vehicle.hcp - vehicle.hcg))/(2*vehicle.l) + vehicle.m*vehicle.hcg*x0_ini.ax_opt[r]/(2*vehicle.l) + (1 - vehicle.Droll)*(vehicle.m*x0_ini.ay_opt[r]*vehicle.hcg)/(Weq))),Fr_static*force_scale)
 
         # Control initial guess
         x0[idx_delta] = 0
@@ -446,7 +463,6 @@ for r in range(N+1):
         x0[idx_Mdfr]  = (x0_ini.F_d_opt[r]*vehicle.R/4)*force_scale*length_scale
         x0[idx_Mdrl]  = (x0_ini.F_d_opt[r]*vehicle.R/4)*force_scale*length_scale
         x0[idx_Mdrr]  = (x0_ini.F_d_opt[r]*vehicle.R/4)*force_scale*length_scale
-        W_r = vehicle.m * vehicle.g * vehicle.d / vehicle.l
         
         x0[idx_Fzt_fl] = ((vehicle.m*vehicle.g*(vehicle.l - vehicle.d))/(2*vehicle.l))*force_scale
         x0[idx_Fzt_fr] = ((vehicle.m*vehicle.g*(vehicle.l - vehicle.d))/(2*vehicle.l))*force_scale
