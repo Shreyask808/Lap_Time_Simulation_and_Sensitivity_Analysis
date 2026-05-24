@@ -30,7 +30,7 @@ plt.close('all')
 
  #=====================================================================================================================================================================================================================
 # User Inputs
-N = 200                                                                                                    # Number of Segments on the track          
+N = 500                                                                                                    # Number of Segments on the track          
 name = 'brush'
 
 #=====================================================================================================================================================================================================================
@@ -243,6 +243,7 @@ f_algebraic = Function('f_algebraic',[X_sym,U_sym],[mechanical_residual*force_sc
 # 15. DYNAMICS ODE — using Fz_sym
 #==========================================================================
 s_dot = (1/time_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv)
+s_dot_safe = 0.5 * (s_dot + ca.sqrt(s_dot**2 + 1e-4))
 n_N_dot = (length_scale/time_scale)*(u*sin(xi) + v*cos(xi))
 psi_N_dot = (angle_scale/time_scale)*psi_dot
 psi_ddot_N = (angle_scale/(time_scale**2))*(1/vehicle.Iz)*(((vehicle.Wf/2)*Fxrr - vehicle.d*Fyrr + Mzrr) - ((vehicle.Wr/2)*Fxrl + vehicle.d*Fyrl - Mzrl) + ((Fyfl*sin(delta) - Fxfl*cos(delta))*(vehicle.Wf/2) + (Fyfl*cos(delta) + Fxfl*sin(delta))*(vehicle.l - vehicle.d) + Mzfl) + ((Fxfr*cos(delta) - Fyfr*sin(delta))*(vehicle.Wf/2) + (Fxfr*sin(delta) + Fyfr*cos(delta))*(vehicle.l - vehicle.d) + Mzfr))
@@ -253,7 +254,7 @@ O_fr_N_dot = (angle_scale/(time_scale**2))*(Md_fr - Fxfr*rfr)*(1/vehicle.Ifr)
 O_rl_N_dot = (angle_scale/(time_scale**2))*(Md_rl - Fxrl*rrl)*(1/vehicle.Irl)
 O_rr_N_dot = (angle_scale/(time_scale**2))*(Md_rr - Fxrr*rrr)*(1/vehicle.Irr)
 
-ODE = vertcat(1/s_dot, n_N_dot/s_dot, psi_N_dot/s_dot,psi_ddot_N/s_dot, u_N_dot/s_dot, v_N_dot/s_dot, O_fl_N_dot/s_dot, O_fr_N_dot/s_dot, O_rl_N_dot/s_dot, O_rr_N_dot/s_dot)
+ODE = vertcat(1/s_dot_safe, n_N_dot/s_dot_safe, psi_N_dot/s_dot_safe,psi_ddot_N/s_dot_safe, u_N_dot/s_dot_safe, v_N_dot/s_dot_safe, O_fl_N_dot/s_dot_safe, O_fr_N_dot/s_dot_safe, O_rl_N_dot/s_dot_safe, O_rr_N_dot/s_dot_safe)
 f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 
 #==========================================================================
@@ -305,7 +306,7 @@ for k in range(N):
     ubg_dynamics.append(0)
 
     g_time.append(state_next[0] - state[0])
-    lbg_time.append(1e-6)
+    lbg_time.append((ds/vehicle.umax)*time_scale)
     ubg_time.append(np.inf)
 
     u_rr_eval,v_rr_eval = f_rr(state,ctrl)
@@ -398,8 +399,8 @@ for r in range(N+1):
         ubx[idx_psi] = float(f_theta(s_grid[0]))*angle_scale
     else:
         lbx[idx_t]   = 0;  ubx[idx_t]   = 200*time_scale
-        lbx[idx_psi] = (f_theta(s_grid[r]) - np.pi/2)*angle_scale
-        ubx[idx_psi] = (f_theta(s_grid[r]) + np.pi/2)*angle_scale
+        lbx[idx_psi] = (f_theta(s_grid[r]) - np.pi/3)*angle_scale
+        ubx[idx_psi] = (f_theta(s_grid[r]) + np.pi/3)*angle_scale
 
     lbx[idx_n]    = f_nr(s_grid[r])*length_scale
     ubx[idx_n]    = f_nl(s_grid[r])*length_scale
@@ -438,11 +439,6 @@ for r in range(N+1):
         ubx[idx_Mdrl]  = vehicle.peakdrivingtorque*force_scale*length_scale
         lbx[idx_Mdrr]  = vehicle.peakbrakingtorque*force_scale*length_scale
         ubx[idx_Mdrr]  = vehicle.peakdrivingtorque*force_scale*length_scale
-
-        lbx[idx_Fzt_fl] = (vehicle.m * vehicle.g * 0.05 / 4) * force_scale  # 5% of static per wheel
-        lbx[idx_Fzt_fr] = (vehicle.m * vehicle.g * 0.05 / 4) * force_scale
-        lbx[idx_Fzt_rl] = (vehicle.m * vehicle.g * 0.05 / 4) * force_scale
-        lbx[idx_Fzt_rr] = (vehicle.m * vehicle.g * 0.05 / 4) * force_scale
 
         # Control initial guess
         x0[idx_delta] = 0
