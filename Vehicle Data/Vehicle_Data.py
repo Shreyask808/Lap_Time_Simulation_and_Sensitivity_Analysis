@@ -38,7 +38,7 @@ vehicle.Cl = -3.5                                                           # Li
 #=====================================================================================================================================================================================================================
 # Vehicle Mass and Interia Properties
 vehicle.m = 800                                                             # Vehicle Mass in kg
-vehicle.Iz = 450                                                            # Vehicle Moment of Interia about cg in kg.m^2 
+vehicle.Iz = 900                                                            # Vehicle Moment of Interia about cg in kg.m^2 
 # Vehicle Axle Interia
 vehicle.Ifl = 1.5                                                           # Front Left Wheel Moment of Interia in kg.m^2
 vehicle.Ifr = 1.5                                                           # Front Right Wheel Moment of Interia in kg.m^2
@@ -50,10 +50,10 @@ vehicle.Irr = 1.5                                                           # Re
 vehicle.R = 0.360                                                           # Tire radius in m
 vehicle.w = 0.305                                                           # Tire width in m
 vehicle.Cp = 4e6                                                            # Tire stiffness per unit length in N/m^2
-vehicle.mu0 = 1.6                                                           # Static friction coefficient [.]
-vehicle.mu = 1.1                                                            # Sliding friction coefficient [.]
+vehicle.mu0 = 2.5                                                           # Static friction coefficient [.]
+vehicle.mu = 2.0                                                            # Sliding friction coefficient [.]
 vehicle.kv = 2e5                                                            # Vertical stiffness of the tire in N.m
-vehicle.alpha_max = d=math.radians(7.0)                                      # Maximum tire slip angle in rad
+vehicle.alpha_max = math.radians(30.0)                                      # Maximum tire slip angle in rad
 vehicle.Crr = 0                                                             # Tire rolling resistance coefficient [.]
 
 #====================================================================================================================================================================================================================
