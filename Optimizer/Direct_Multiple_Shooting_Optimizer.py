@@ -262,22 +262,32 @@ U_opt = full_sol[n_x_total:].reshape((2, N), order='F')
 print(f"Shape of X_opt is: {X_opt.shape}")
 print(f"Shape of U_opt is: {U_opt.shape}")
 
+kappa = np.array([float(f_kappa(s)) for s in s_grid])
+drag = np.array([float(f_Drag(X_opt[:,k])) for k in range(N+1)])
 time_opt = X_opt[0,:]/time_scale
 n_opt = X_opt[1,:]/length_scale
 u_opt = X_opt[2,:]/speed_scale
 v_opt = X_opt[3,:]/speed_scale
 
 F_d_opt = U_opt[0,:]/force_scale
+F_d_opt = np.append(F_d_opt,F_d_opt[0])
 F_n_opt = U_opt[1,:]/force_scale
-Power_opt = F_d_opt*u_opt[:-1]
+F_n_opt = np.append(F_n_opt,F_n_opt[0])
+Power_opt = F_d_opt*u_opt
+
+ax_opt = ((F_d_opt - drag)/vehicle.m + v_opt*u_opt*kappa/(1 - n_opt*kappa))
+ay_opt = (F_n_opt/vehicle.m - (u_opt**2)*kappa/(1 - n_opt*kappa))
 
 x0_ini = SimpleNamespace()
+x0_ini.s_grid_opt = s_grid
 x0_ini.time_opt = time_opt
 x0_ini.n_opt = n_opt
 x0_ini.u_opt = u_opt
 x0_ini.v_opt = v_opt
 x0_ini.F_d_opt = F_d_opt
 x0_ini.F_n_opt = F_n_opt
+x0_ini.ax_opt = ax_opt
+x0_ini.ay_opt = ay_opt
 
 print(f"Optimized Lap Time is: {time_opt[-1]}")
 
@@ -297,113 +307,25 @@ z_opt = np.array(f_zc(s_grid)).flatten() + n_opt * np.array(f_normal3(s_grid)).f
 
 #%%
 #====================================================================================================================================================================================================================
-# Results and Plots 
-## Figure 1 - Racing Line
-fig = go.Figure()
+fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
 
-# Optimized Right Boundary Data
-fig.add_trace(go.Scatter3d(
-    x=track_data.br[0,:], y=track_data.br[1,:], z=track_data.br[2,:],
-    mode='lines',
-    name='Right Boundary - Optimized',
-    line=dict(color='blue', width=4)
-))
-
-# Optimized Left Boundary Data
-fig.add_trace(go.Scatter3d(
-    x=track_data.bl[0,:], y=track_data.bl[1,:], z=track_data.bl[2,:], 
-    mode='lines',
-    name='Left Boundary - Optimized',
-    line=dict(color='blue', width=4)
-))
-
-# Optimized Centerline
-fig.add_trace(go.Scatter3d(
-    x=track_data.xc, y=track_data.yc, z=track_data.zc, 
-    mode='lines',
-    name='Centerline Coordinates - Optimized',
-    line=dict(color='red', width=4, dash='dashdot')
-))
-
-# Optimal Racing Line Data
-fig.add_trace(go.Scatter3d(
-    x=x_opt, y=y_opt, z=z_opt,
-    mode='lines',
-    name='Optimized Racing Line',
-    line=dict(color='black', width=4)
-))
-
-fig.update_layout(
-    title="Circuit de Barcelona-Catalunya - 3D Track Geometry",
-    scene=dict(
-        xaxis_title='x-coordinate (m)',
-        yaxis_title='y-coordinate (m)',
-        zaxis_title='Elevation (m)',
-        aspectmode='data'),
-    margin=dict(l=0, r=0, b=0, t=50)
-)
-fig.show()
-
-# Figure 2 - Lateral and Drive Forces
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
-
-# Drive Force
-ax1.plot(s_grid[0:-1],F_d_opt,color='black')
+# Longitudinal Acceleration
+ax1.plot(s_grid,ax_opt,color='black')
 ax1.set_xlabel('Track Centerline Arc Length [m]')
-ax1.set_ylabel('Drive Force [N]')
-ax1.grid(True, alpha=0.3)
-ax1.axhline(0,color='red')
-
-# Lateral Force
-ax2.plot(s_grid[0:-1],F_n_opt,color='black')
-ax2.set_xlabel('Track Centerline Arc Length [m]')
-ax2.set_ylabel('Lateral Force [N]')
-ax2.grid(True, alpha=0.3)
-ax2.axhline(0,color='red')
-
-plt.tight_layout()
-plt.show()
-
-# Figure 3 - Lateral Offset, Longitudinal and Lateral Velocities
-fig, (ax1,ax2,ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
-
-# Lateral Offset
-ax1.plot(s_grid,n_opt,color='black')
-ax1.plot(track_data.arc_s,track_data.nl,color='blue',label='Left Boundary')
-ax1.plot(track_data.arc_s,track_data.nr,color='red',label='Right Boundary')
-ax1.set_xlabel('Track Centerline Arc Length [m]')
-ax1.set_ylabel('Lateral Offset [m]')
+ax1.set_ylabel('Longitudinal Acceleration [m/s^2]')
 ax1.grid(True, alpha=0.3)
 ax1.axhline(0,color='red')
 ax1.legend()
 
-# Longitudinal Speed
-ax2.plot(s_grid,u_opt*(18/5),color='black')
-ax2.set_xlabel('Track Centerline Arc Length [m]')
-ax2.set_ylabel('Longitudinal Speed [kmph]')
-ax2.grid(True, alpha=0.3)
-ax2.axhline(0,color='red')
-ax2.axhline(vehicle.umax*(18/5),color='red')
-
-# Lateral Speed
-ax3.plot(s_grid,v_opt*(18/5),color='black')
-ax3.set_xlabel('Track Centerline Arc Length [m]')
-ax3.set_ylabel('Lateral Speed [kmph]')
-ax3.grid(True, alpha=0.3)
-ax3.axhline(0,color='red')
-ax3.axhline(vehicle.vmax*(18/5),color='red')
-ax3.axhline(-vehicle.vmax*(18/5),color='red')
-
 plt.tight_layout()
 plt.show()
-
 
 fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
 
-# Lateral Offset
-ax1.plot(s_grid[:-1],Power_opt/1000,color='black')
+# Longitudinal Acceleration
+ax1.plot(s_grid,ay_opt,color='black')
 ax1.set_xlabel('Track Centerline Arc Length [m]')
-ax1.set_ylabel('Vehicle Power [kW]')
+ax1.set_ylabel('Lateral Acceleration [m/s^2]')
 ax1.grid(True, alpha=0.3)
 ax1.axhline(0,color='red')
 ax1.legend()
@@ -411,23 +333,18 @@ ax1.legend()
 plt.tight_layout()
 plt.show()
 
-STATES,COST,G,LBG,UBG,LBX,UBX,X0 = Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini)
+# Save Point Mass Optimization
+root = tk.Tk()
+root.withdraw()
+files = [('Pickle Files','*.pkl'), ('All Files', '*.*')]
+full_save_path = filedialog.asksaveasfilename(
+    defaultextension=".pkl",
+    filetypes=files,
+    title="Save Point Mass Optimization"
+)
+with open(full_save_path, 'wb') as f:
+    pickle.dump(x0_ini, f, protocol=pickle.HIGHEST_PROTOCOL)
+print(f"Point Mass Optimization successfully saved to: {full_save_path}")
 
-print(f"Length of Optimal Control State Vector is :{STATES.numel()}")
-nlp = {'x':STATES,'f':COST,'g':G}
-print("Building NLP graph... this may take several minutes")
-opts = {'ipopt': {
-    'max_iter': 4000,
-    'print_level': 5,
-    'mu_strategy': 'adaptive',
-    'warm_start_init_point': 'yes',       # add this
-    'warm_start_bound_push': 1e-6,
-    'warm_start_mult_bound_push': 1e-6,
-    'bound_push': 1e-6,                   # prevent x0 from being on bounds
-    'bound_frac': 1e-6,
-}}
-print("Compiling solver...")
-solver = nlpsol('solver', 'ipopt', nlp, opts)
-print("Solver compiled - starting optimization")
-sol = solver(x0=X0, lbx=LBX, ubx=UBX, lbg=LBG, ubg=UBG)
-full_sol = np.array(sol['x']).flatten()
+## End
+#===================================================================================================================================================================================================================
