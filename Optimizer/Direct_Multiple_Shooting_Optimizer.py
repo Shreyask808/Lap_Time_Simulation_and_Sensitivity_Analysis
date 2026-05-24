@@ -333,19 +333,18 @@ ax1.legend()
 plt.tight_layout()
 plt.show()
 
+# Save Point Mass Optimization
+root = tk.Tk()
+root.withdraw()
+files = [('Pickle Files','*.pkl'), ('All Files', '*.*')]
+full_save_path = filedialog.asksaveasfilename(
+    defaultextension=".pkl",
+    filetypes=files,
+    title="Save Point Mass Optimization"
+)
+with open(full_save_path, 'wb') as f:
+    pickle.dump(x0_ini, f, protocol=pickle.HIGHEST_PROTOCOL)
+print(f"Point Mass Optimization successfully saved to: {full_save_path}")
 
-STATES,COST,G,LBG,UBG,LBX,UBX,X0 = Seven_DOF_Handling_Model_2D(vehicle,track_data,N,name,x0_ini)
-
-print(f"Length of Optimal Control State Vector is :{STATES.numel()}")
-nlp = {'x':STATES,'f':COST,'g':G}
-print("Building NLP graph... this may take several minutes")
-opts = {'ipopt': {
-    'max_iter': 4000,
-    'print_level': 5,
-    'mu_strategy': 'adaptive'
-}}
-print("Compiling solver...")
-solver = nlpsol('solver', 'ipopt', nlp, opts)
-print("Solver compiled - starting optimization")
-sol = solver(x0=X0, lbx=LBX, ubx=UBX, lbg=LBG, ubg=UBG)
-full_sol = np.array(sol['x']).flatten()
+## End
+#===================================================================================================================================================================================================================
