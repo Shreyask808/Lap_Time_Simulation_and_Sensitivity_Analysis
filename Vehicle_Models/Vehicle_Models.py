@@ -30,7 +30,7 @@ plt.close('all')
 
  #=====================================================================================================================================================================================================================
 # User Inputs
-N = 500                                                                                                    # Number of Segments on the track          
+N = 1500                                                                                                    # Number of Segments on the track          
 name = 'brush'
 
 #=====================================================================================================================================================================================================================
@@ -108,7 +108,6 @@ states = vertcat(reshape(X, -1, 1),reshape(U, -1, 1))
 #==========================================================================
 X_sym  = SX.sym('X_sym',  n_states)    # symbolic state
 U_sym  = SX.sym('U_sym',  u_states)    # symbolic control
-Fz_sym = SX.sym('Fz_sym', 4)           # [Fzfl, Fzfr, Fzrl, Fzrr] — rootfinder unknown
 s      = SX.sym('s')                   # arc length
 
 #==========================================================================
@@ -148,7 +147,7 @@ Fzrr_t_N = U_sym[8]
 
 Fz_t = (1/force_scale)*ca.vertcat(Fzfl_t_N,Fzfr_t_N,Fzrl_t_N,Fzrr_t_N)
 
-eps = 0.1
+eps = 1e-4
 Fz_phys = 0.5*(Fz_t + ca.sqrt(Fz_t**2 + eps))
 Fzfl_p = Fz_phys[0]
 Fzfr_p = Fz_phys[1]
@@ -216,19 +215,26 @@ f_fr = Function('f_fr',[X_sym,U_sym],[u_fr,v_fr])
 # 12. SLIP ANGLES
 #==========================================================================
 alpha_rr = ca.atan2(v_rr, u_rr)
+alpha_rrt = 0.5*(alpha_rr + vehicle.alpha_max - sqrt((alpha_rr - vehicle.alpha_max)**2 + 1e-4)) - 0.5*(alpha_rr - vehicle.alpha_max - sqrt((alpha_rr + vehicle.alpha_max)**2 + 1e-4)) - vehicle.alpha_max
+
 alpha_rl = ca.atan2(v_rl, u_rl)
+alpha_rlt = 0.5*(alpha_rl + vehicle.alpha_max - sqrt((alpha_rl - vehicle.alpha_max)**2 + 1e-4)) - 0.5*(alpha_rl - vehicle.alpha_max - sqrt((alpha_rl + vehicle.alpha_max)**2 + 1e-4)) - vehicle.alpha_max
+
 alpha_fl = ca.atan2(v_fl, u_fl)
+alpha_flt = 0.5*(alpha_fl + vehicle.alpha_max - sqrt((alpha_fl - vehicle.alpha_max)**2 + 1e-4)) - 0.5*(alpha_fl - vehicle.alpha_max - sqrt((alpha_fl + vehicle.alpha_max)**2 + 1e-4)) - vehicle.alpha_max
+
 alpha_fr = ca.atan2(v_fr, u_fr)
+alpha_frt = 0.5*(alpha_fr + vehicle.alpha_max - sqrt((alpha_fr - vehicle.alpha_max)**2 + 1e-4)) - 0.5*(alpha_fr - vehicle.alpha_max - sqrt((alpha_fr + vehicle.alpha_max)**2 + 1e-4)) - vehicle.alpha_max
 
 #==========================================================================
 # 13. TIRE FORCES — using Fz_sym
 #==========================================================================
 tire_model = get_tire_model(name)
 
-Fxrr, Fyrr, Mzrr, rrr = tire_model(u_rr, O_rr, alpha_rr, Fzrr_p, vehicle)
-Fxrl, Fyrl, Mzrl, rrl = tire_model(u_rl, O_rl, alpha_rl, Fzrl_p, vehicle)
-Fxfr, Fyfr, Mzfr, rfr = tire_model(u_fr, O_fr, alpha_fr, Fzfr_p, vehicle)
-Fxfl, Fyfl, Mzfl, rfl = tire_model(u_fl, O_fl, alpha_fl, Fzfl_p, vehicle)
+Fxrr, Fyrr, Mzrr, rrr = tire_model(u_rr, O_rr, alpha_rrt, Fzrr_p, vehicle)
+Fxrl, Fyrl, Mzrl, rrl = tire_model(u_rl, O_rl, alpha_rlt, Fzrl_p, vehicle)
+Fxfr, Fyfr, Mzfr, rfr = tire_model(u_fr, O_fr, alpha_frt, Fzfr_p, vehicle)
+Fxfl, Fyfl, Mzfl, rfl = tire_model(u_fl, O_fl, alpha_flt, Fzfl_p, vehicle)
 
 #==========================================================================
 # 14. FZ RESIDUAL
@@ -244,8 +250,7 @@ f_algebraic = Function('f_algebraic',[X_sym,U_sym],[mechanical_residual*force_sc
 #==========================================================================
 # 15. DYNAMICS ODE — using Fz_sym
 #==========================================================================
-s_dot = (1/time_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv) + 1
-s_dot_safe = 0.5 * (s_dot + ca.sqrt(s_dot**2 + 1e-4))
+s_dot = (1/time_scale)*(u*cos(xi) - v*sin(xi))/(1 - n*curv)
 n_N_dot = (length_scale/time_scale)*(u*sin(xi) + v*cos(xi))
 psi_N_dot = (angle_scale/time_scale)*psi_dot
 psi_ddot_N = (angle_scale/(time_scale**2))*(1/vehicle.Iz)*(((vehicle.Wf/2)*Fxrr - vehicle.d*Fyrr + Mzrr) - ((vehicle.Wr/2)*Fxrl + vehicle.d*Fyrl - Mzrl) + ((Fyfl*sin(delta) - Fxfl*cos(delta))*(vehicle.Wf/2) + (Fyfl*cos(delta) + Fxfl*sin(delta))*(vehicle.l - vehicle.d) + Mzfl) + ((Fxfr*cos(delta) - Fyfr*sin(delta))*(vehicle.Wf/2) + (Fxfr*sin(delta) + Fyfr*cos(delta))*(vehicle.l - vehicle.d) + Mzfr))
@@ -256,9 +261,10 @@ O_fr_N_dot = (angle_scale/(time_scale**2))*(Md_fr - Fxfr*rfr)*(1/vehicle.Ifr)
 O_rl_N_dot = (angle_scale/(time_scale**2))*(Md_rl - Fxrl*rrl)*(1/vehicle.Irl)
 O_rr_N_dot = (angle_scale/(time_scale**2))*(Md_rr - Fxrr*rrr)*(1/vehicle.Irr)
 
-ODE = vertcat(1/s_dot_safe, n_N_dot/s_dot_safe, psi_N_dot/s_dot_safe,psi_ddot_N/s_dot_safe, u_N_dot/s_dot_safe, v_N_dot/s_dot_safe, O_fl_N_dot/s_dot_safe, O_fr_N_dot/s_dot_safe, O_rl_N_dot/s_dot_safe, O_rr_N_dot/s_dot_safe)
+ODE = vertcat(1/s_dot, n_N_dot/s_dot, psi_N_dot/s_dot,psi_ddot_N/s_dot, u_N_dot/s_dot, v_N_dot/s_dot, O_fl_N_dot/s_dot, O_fr_N_dot/s_dot, O_rl_N_dot/s_dot, O_rr_N_dot/s_dot)
 f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 
+penalty_weight = 1.0  # Start with a high penalty
 #==========================================================================
 # 16. NLP LOOP
 #==========================================================================
@@ -299,35 +305,35 @@ for k in range(N):
 
     mech_eval,susp_eval = f_algebraic(state,ctrl)
 
-    g_dynamics.append(mech_eval)
-    lbg_dynamics.append(np.zeros((3,1)))
-    ubg_dynamics.append(np.zeros((3,1)))
+    #g_dynamics.append(mech_eval*force_scale)
+    #lbg_dynamics.append(np.zeros((3,1)))
+    #ubg_dynamics.append(np.zeros((3,1)))
 
-    g_dynamics.append(susp_eval)
-    lbg_dynamics.append(0)
-    ubg_dynamics.append(0)
+    #g_dynamics.append(susp_eval*force_scale)
+    #lbg_dynamics.append(0)
+    #ubg_dynamics.append(0)
 
     g_time.append(state_next[0] - state[0])
     lbg_time.append((ds/vehicle.umax)*time_scale)
     ubg_time.append(np.inf)
 
     u_rr_eval,v_rr_eval = f_rr(state,ctrl)
-    g_dynamics.append(-ca.atan2(v_rr_eval,u_rr_eval))
+    g_dynamics.append(ca.atan2(v_rr_eval,u_rr_eval))
     lbg_dynamics.append(-vehicle.alpha_max)
     ubg_dynamics.append(vehicle.alpha_max)
 
     u_rl_eval,v_rl_eval = f_rl(state,ctrl)
-    g_dynamics.append(-ca.atan2(v_rl_eval,u_rl_eval))
+    g_dynamics.append(ca.atan2(v_rl_eval,u_rl_eval))
     lbg_dynamics.append(-vehicle.alpha_max)
     ubg_dynamics.append(vehicle.alpha_max)
 
     u_fr_eval,v_fr_eval = f_fr(state,ctrl)
-    g_dynamics.append(-ca.atan2(v_fr_eval,u_fr_eval))
+    g_dynamics.append(ca.atan2(v_fr_eval,u_fr_eval))
     lbg_dynamics.append(-vehicle.alpha_max)
     ubg_dynamics.append(vehicle.alpha_max)
 
     u_fl_eval,v_fl_eval = f_fl(state,ctrl)
-    g_dynamics.append(-ca.atan2(v_fl_eval,u_fl_eval))
+    g_dynamics.append(ca.atan2(v_fl_eval,u_fl_eval))
     lbg_dynamics.append(-vehicle.alpha_max)
     ubg_dynamics.append(vehicle.alpha_max)
 
@@ -336,9 +342,10 @@ for k in range(N):
     ubg_power.append(vehicle.peakdrivingpower*force_scale*speed_scale)
 
     dt = (state_next[0] - state[0])/time_scale
-    cost = cost + dt*(e0*ctrl[0]**2 + e1*ctrl[1]**2 + e2*ctrl[2]**2 + e3*ctrl[3]**2 + e4*ctrl[4]**2)
+    cost = cost + dt*(e0*ctrl[0]**2 + e1*ctrl[1]**2 + e2*ctrl[2]**2 + e3*ctrl[3]**2 + e4*ctrl[4]**2) + penalty_weight * ca.sumsqr(susp_eval) + penalty_weight*ca.sumsqr(mech_eval)
 
 cost = cost + X[0,-1]/time_scale
+    
 
 
 #==========================================================================
@@ -410,15 +417,15 @@ for r in range(N+1):
 
     lbx[idx_n]    = f_nr(s_grid[r])*length_scale
     ubx[idx_n]    = f_nl(s_grid[r])*length_scale
-    lbx[idx_u]    = 5*speed_scale
+    lbx[idx_u]    = 2*speed_scale
     ubx[idx_u]    = vehicle.umax*speed_scale
-    lbx[idx_O_fl] = (5/vehicle.R)*(angle_scale/time_scale)
+    lbx[idx_O_fl] = (2/vehicle.R)*(angle_scale/time_scale)
     ubx[idx_O_fl] = (vehicle.umax/vehicle.R)*(angle_scale/time_scale)
     lbx[idx_O_fr] = (5/vehicle.R)*(angle_scale/time_scale)
     ubx[idx_O_fr] = (vehicle.umax/vehicle.R)*(angle_scale/time_scale)
-    lbx[idx_O_rl] = (5/vehicle.R)*(angle_scale/time_scale)
+    lbx[idx_O_rl] = (2/vehicle.R)*(angle_scale/time_scale)
     ubx[idx_O_rl] = (vehicle.umax/vehicle.R)*(angle_scale/time_scale)
-    lbx[idx_O_rr] = (5/vehicle.R)*(angle_scale/time_scale)
+    lbx[idx_O_rr] = (2/vehicle.R)*(angle_scale/time_scale)
     ubx[idx_O_rr] = (vehicle.umax/vehicle.R)*(angle_scale/time_scale)
 
     # State initial guess
@@ -426,7 +433,7 @@ for r in range(N+1):
     x0[idx_n]       = x0_ini.n_opt[r]*length_scale
     x0[idx_psi]     = float(f_theta(s_grid[r]))*angle_scale
     x0[idx_u]       = x0_ini.u_opt[r]*speed_scale
-    x0[idx_v]       = x0_ini.v_opt[r]*speed_scale
+    x0[idx_v]       = 0
     x0[idx_O_fl]    = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
     x0[idx_O_fr]    = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
     x0[idx_O_rl]    = (x0_ini.u_opt[r]/vehicle.R)*(angle_scale/time_scale)
@@ -445,6 +452,7 @@ for r in range(N+1):
         ubx[idx_Mdrl]  = vehicle.peakdrivingtorque*force_scale*length_scale
         lbx[idx_Mdrr]  = vehicle.peakbrakingtorque*force_scale*length_scale
         ubx[idx_Mdrr]  = vehicle.peakdrivingtorque*force_scale*length_scale
+        
         lbx[idx_Fzt_fl] = 0
         ubx[idx_Fzt_fl] = max(float((force_scale*Force_mag)*((f_Drag(x0_ini.u_opt[r]*speed_scale)*(vehicle.hcg - vehicle.hcp) + (vehicle.a - vehicle.d)*f_Lift(x0_ini.u_opt[r]*speed_scale) + vehicle.m*vehicle.g*vehicle.d)/(2*vehicle.l) - vehicle.m*vehicle.hcg*x0_ini.ax_opt[r]/(2*vehicle.l) - vehicle.Droll*vehicle.m*x0_ini.ay_opt[r]*vehicle.hcg/Weq)),Ff_static*force_scale)
 
