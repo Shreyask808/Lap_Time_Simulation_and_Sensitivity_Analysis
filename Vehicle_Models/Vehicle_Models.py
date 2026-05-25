@@ -215,10 +215,10 @@ f_fr = Function('f_fr',[X_sym,U_sym],[u_fr,v_fr])
 #==========================================================================
 # 12. SLIP ANGLES
 #==========================================================================
-alpha_rr = -ca.atan2(v_rr, u_rr)
-alpha_rl = -ca.atan2(v_rl, u_rl)
-alpha_fl = -ca.atan2(v_fl, u_fl)
-alpha_fr = -ca.atan2(v_fr, u_fr)
+alpha_rr = ca.atan2(v_rr, u_rr)
+alpha_rl = ca.atan2(v_rl, u_rl)
+alpha_fl = ca.atan2(v_fl, u_fl)
+alpha_fr = ca.atan2(v_fr, u_fr)
 
 #==========================================================================
 # 13. TIRE FORCES — using Fz_sym
