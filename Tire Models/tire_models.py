@@ -27,10 +27,12 @@ def combined_brush_tire_model(u,omega,alpha,Fz,vehicle):
     w = vehicle.w
     Cp = vehicle.Cp
     kv = vehicle.kv
-    alpha_max = vehicle.alpha_max
+    sidewall_len = vehicle.sidewall_len
+    r_max = 0.2*sidewall_len
 
     # Effective Radius Calculation
     r = R - (Fz/kv)
+    r = 0.5*(sqrt(r**2 + 1e-4) - sqrt((r - r_max)**2 + 1e-4) + r_max)
     a = sqrt(R**2 - r**2)
     Pmax = 3*Fz/(4*a*w)
 
@@ -43,10 +45,10 @@ def combined_brush_tire_model(u,omega,alpha,Fz,vehicle):
     
     # Adhesion Length Estimation
     ad_len = 2*a - ((Cp*sigma*a**2)/(mu0*w*Pmax))
-    ad_len = 0.5*(ad_len + sqrt(ad_len**2 + 0.01)) - 0.5*(ad_len + sqrt((ad_len - 2*a)**2 + 0.01)) + a
+    ad_len = 0.5*(ad_len + sqrt(ad_len**2 + 0.001)) - 0.5*(ad_len + sqrt((ad_len - 2*a)**2 + 0.001)) + a
     sliding_term = mu*w*Pmax*((4*ad_len/3) - ((ad_len**2)/a) + ((ad_len**3)/(3*a**2)))
-    dir_x   = sigma_x / sigma      # stable because sigma >= sqrt(eps)
-    dir_y   = sigma_y / sigma      # same
+    dir_x   = sigma_x / sigma
+    dir_y   = sigma_y / sigma
 
     Fx = (Cp/2)*sigma_x*(ad_len**2) + dir_x*sliding_term
     Fy = (Cp/2)*sigma_y*(ad_len**2) + dir_y*sliding_term
@@ -54,6 +56,10 @@ def combined_brush_tire_model(u,omega,alpha,Fz,vehicle):
 
     return Fx, Fy, Mz, r
 
+
+def Magic_Formula(u,omega,alpha,vehicle):
+    
+    
 #====================================================================================================
 #Registry
 #====================================================================================================
