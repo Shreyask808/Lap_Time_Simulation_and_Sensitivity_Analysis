@@ -78,8 +78,6 @@ if file_path3:
 else:
     raise FileNotFoundError("Point Mass Optimization data not found")
 
-N = 200
-
 n_states = 10
 u_states = 9
 
