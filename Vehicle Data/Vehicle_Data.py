@@ -55,6 +55,7 @@ vehicle.mu = 2.0                                                            # Sl
 vehicle.kv = 2e5                                                            # Vertical stiffness of the tire in N.m
 vehicle.alpha_max = math.radians(30.0)                                      # Maximum tire slip angle in rad
 vehicle.Crr = 0                                                             # Tire rolling resistance coefficient [.]
+vehicle.sidewall_len = 0.1                                                 # Tire Sidewall Length in m
 
 #====================================================================================================================================================================================================================
 # Vehicle Powertrain Limits
