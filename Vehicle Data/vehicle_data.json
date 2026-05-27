@@ -27,6 +27,7 @@
     "kv": 200000.0,
     "alpha_max": 0.5235987755982988,
     "Crr": 0,
+    "sidewall_len": 0.1,
     "peakdrivingpower": 880000.0,
     "peakbrakingpower": -1500000.0,
     "peakdrivingtorque": 1000,
