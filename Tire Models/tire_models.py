@@ -57,8 +57,6 @@ def combined_brush_tire_model(u,omega,alpha,Fz,vehicle):
     return Fx, Fy, Mz, r
 
 
-def Magic_Formula(u,omega,alpha,vehicle):
-    
     
 #====================================================================================================
 #Registry
