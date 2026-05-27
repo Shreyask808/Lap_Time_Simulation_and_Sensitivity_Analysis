@@ -211,7 +211,9 @@ lbg_power = []
 ubg_power = []
 
 cost = 0
-e0 = 1e-4
+e0 = 1e-2
+e1 = 1e-2
+e2 = 1e-4
 
 for k in range(N):
     s_current = s_grid[k]
@@ -253,7 +255,7 @@ for k in range(N):
     ubg_power.append(vehicle.peakdrivingpower*force_scale*speed_scale)
 
     dt = (state_next[0] - state[0])/time_scale
-    cost = cost + dt*e0*(ctrl[0]**2 + ctrl[2]**2 + ctrl[3]**2 + ctrl[4]**2 + ctrl[5]**2 + ctrl[6]**2 + ctrl[7]**2 + ctrl[8]**2)
+    cost = cost + e1*state[1]**2 + e2*state[5]**2 + dt*e0*(ctrl[0]**2 + ctrl[2]**2 + ctrl[3]**2 + ctrl[4]**2 + ctrl[5]**2 + ctrl[6]**2 + ctrl[7]**2 + ctrl[8]**2)
 
 cost = cost + X[0,-1]/time_scale
 
@@ -318,7 +320,10 @@ for r in range(N+1):
     ubx[idx_n] = float(f_nl(s_grid[r]))*length_scale
     lbx[idx_u]    = 2*speed_scale
     ubx[idx_u]    = vehicle.umax*speed_scale
-    
+
+    lbx[idx_v]    = -vehicle.vmax*speed_scale
+    ubx[idx_v]    = vehicle.vmax*speed_scale
+
     # State initial guess
     x0[idx_t]       = x0_ini.time_opt[r]*time_scale
     x0[idx_n]       = x0_ini.n_opt[r]*length_scale
@@ -388,6 +393,118 @@ Fxrl_opt = U_opt[5,:]/force_scale
 Fyrl_opt = U_opt[6,:]/force_scale
 
 Fxrr_opt = U_opt[7,:]/force_scale
-Fyr_opt = U_opt[8,:]/force_scale
+Fyrr_opt = U_opt[8,:]/force_scale
 
 print(f"Optimized Lap Time is: {time_opt[-1]}")
+
+#====================================================================================================================================================================================================================
+# Frenet Coordinates to Cartesian Coordinates
+f_normal1 = ca.interpolant('f_normal1','linear',[track_data.arc_s.tolist()],track_data.n[0,:].tolist())
+f_normal2 = ca.interpolant('f_normal2','linear',[track_data.arc_s.tolist()],track_data.n[1,:].tolist())
+f_normal3 = ca.interpolant('f_normal3','linear',[track_data.arc_s.tolist()],track_data.n[2,:].tolist())
+
+f_xc = ca.interpolant('f_xc','linear',[track_data.arc_s.tolist()],track_data.xc.tolist())
+f_yc = ca.interpolant('f_yc','linear',[track_data.arc_s.tolist()],track_data.yc.tolist())
+f_zc = ca.interpolant('f_zc','linear',[track_data.arc_s.tolist()],track_data.zc.tolist())
+
+x_opt = np.array(f_xc(s_grid)).flatten() + n_opt * np.array(f_normal1(s_grid)).flatten()
+y_opt = np.array(f_yc(s_grid)).flatten() + n_opt * np.array(f_normal2(s_grid)).flatten()
+z_opt = np.array(f_zc(s_grid)).flatten() + n_opt * np.array(f_normal3(s_grid)).flatten()
+
+#====================================================================================================================================================================================================================
+# Results and Plots 
+## Figure 1 - Racing Line
+fig = go.Figure()
+
+# Optimized Right Boundary Data
+fig.add_trace(go.Scatter3d(
+    x=track_data.br[0,:], y=track_data.br[1,:], z=track_data.br[2,:],
+    mode='lines',
+    name='Right Boundary - Optimized',
+    line=dict(color='blue', width=4)
+))
+
+# Optimized Left Boundary Data
+fig.add_trace(go.Scatter3d(
+    x=track_data.bl[0,:], y=track_data.bl[1,:], z=track_data.bl[2,:], 
+    mode='lines',
+    name='Left Boundary - Optimized',
+    line=dict(color='blue', width=4)
+))
+
+# Optimized Centerline
+fig.add_trace(go.Scatter3d(
+    x=track_data.xc, y=track_data.yc, z=track_data.zc, 
+    mode='lines',
+    name='Centerline Coordinates - Optimized',
+    line=dict(color='red', width=4, dash='dashdot')
+))
+
+# Optimal Racing Line Data
+fig.add_trace(go.Scatter3d(
+    x=x_opt, y=y_opt, z=z_opt,
+    mode='lines',
+    name='Optimized Racing Line',
+    line=dict(color='black', width=4)
+))
+
+fig.update_layout(
+    title="Circuit de Barcelona-Catalunya - 3D Track Geometry",
+    scene=dict(
+        xaxis_title='x-coordinate (m)',
+        yaxis_title='y-coordinate (m)',
+        zaxis_title='Elevation (m)',
+        aspectmode='data'),
+    margin=dict(l=0, r=0, b=0, t=50)
+)
+fig.show()
+
+# Tire Forces
+fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
+
+# Longitudinal Forces
+ax1.plot(s_grid[:-1],Fxfl_opt,color='black',label='Front Left')
+ax1.plot(s_grid[:-1],Fxfr_opt,color='blue',label='Front Right')
+ax1.plot(s_grid[:-1],Fxrl_opt,color='red',label='Rear Left')
+ax1.plot(s_grid[:-1],Fxrr_opt,color='orange',label='Rear Right')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Longitudinal Forces [N]')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='green')
+ax1.legend()
+
+# Lateral Forces
+ax2.plot(s_grid[:-1],Fyfl_opt,color='black',label='Front Left')
+ax2.plot(s_grid[:-1],Fyfr_opt,color='blue',label='Front Right')
+ax2.plot(s_grid[:-1],Fyrl_opt,color='red',label='Rear Left')
+ax2.plot(s_grid[:-1],Fyrr_opt,color='orange',label='Rear Right')
+ax2.set_xlabel('Track Centerline Arc Length [m]')
+ax2.set_ylabel('Lateral Forces [N]')
+ax2.grid(True, alpha=0.3)
+ax2.axhline(0,color='green')
+ax2.legend()
+
+plt.tight_layout()
+plt.show()
+
+
+# Vehicle Velocities
+fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
+
+# Longitudinal Speed
+ax1.plot(s_grid,u_opt*(18/5),color='black')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Longitudinal Speed [kmph]')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='green')
+
+# Lateral Speed
+ax2.plot(s_grid,v_opt*(18/5),color='black')
+ax2.set_xlabel('Track Centerline Arc Length [m]')
+ax2.set_ylabel('Lateral Speed [kmph]')
+ax2.grid(True, alpha=0.3)
+ax2.axhline(0,color='green')
+
+plt.tight_layout()
+plt.show()
+
