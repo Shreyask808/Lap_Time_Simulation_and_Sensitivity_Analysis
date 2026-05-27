@@ -78,7 +78,7 @@ else:
     raise FileNotFoundError("Point Mass Optimization data not found")
 
 n_states = 6
-u_states = 9
+u_states = 13
 
 lap_length = track_data.arc_s[-1]
 s_grid = np.linspace(0,lap_length,N+1)
@@ -140,6 +140,11 @@ Fyrl_N = U_sym[6]
 Fxrr_N = U_sym[7]
 Fyrr_N = U_sym[8]
 
+Fzfl_tN = U_sym[9]
+Fzfr_tN = U_sym[10]
+Fzrl_tN = U_sym[11]
+Fzrr_tN = U_sym[12]
+
 # Descaled States
 t       = t_N/time_scale
 n       = n_N/length_scale
@@ -162,6 +167,11 @@ Fyrl = Fyrl_N/force_scale
 Fxrr = Fxrr_N/force_scale
 Fyrr = Fyrr_N/force_scale
 
+Fzfl_t = Fzfl_tN/force_scale
+Fzfr_t = Fzfr_tN/force_scale
+Fzrl_t = Fzrl_tN/force_scale
+Fzrr_t = Fzrr_tN/force_scale
+
 #==========================================================================
 # 9. TRACK DATA
 #==========================================================================
@@ -181,6 +191,21 @@ Fr = vehicle.m*vehicle.g*(vehicle.l - vehicle.d)/(2*vehicle.l) + Lift*(vehicle.d
 Ff = 0.5*(vehicle.m*vehicle.g - Lift) - Fr
 f_Fr = Function('f_Fr',[X_sym],[Fr])
 f_Ff = Function('f_Ff',[X_sym],[Ff])
+
+A = ca.vertcat(ca.horzcat(1,1,1,1),ca.horzcat((vehicle.Wf/2), -(vehicle.Wf/2), (vehicle.Wr/2), (-vehicle.Wr/2)), ca.horzcat((vehicle.d - vehicle.l), (vehicle.d - vehicle.l), vehicle.d, vehicle.d), ca.horzcat((1 - vehicle.Droll), (vehicle.Droll - 1), -vehicle.Droll, vehicle.Droll))
+B = ca.vertcat(vehicle.m*vehicle.g - Lift, -(Fyrl + Fyrr + (Fyfl + Fyfr)*cos(delta) + (Fxfl + Fxfr)*sin(delta)), Drag*(vehicle.hcg - vehicle.hcp) - vehicle.a*Lift - vehicle.hcg*((Fxfr + Fxfl)*cos(delta) - (Fyfr + Fyfl)*sin(delta) - (Fxrl + Fxrr)),0)
+Fz_t = vertcat(Fzfl_t,Fzfr_t,Fzrl_t,Fzrr_t)
+
+eps = 1e-4
+Fz_phys = 0.5*(Fz_t + ca.sqrt(Fz_t**2 + eps))
+Fzfl_p = Fz_phys[0]
+Fzfr_p = Fz_phys[1]
+Fzrl_p = Fz_phys[2]
+Fzrr_p = Fz_phys[3]
+
+mechanical_residual = ca.mtimes(A[0:3,:],Fz_phys) - B[0:3]
+suspension_residual = ca.mtimes(A[3,:],Fz_t) - B[3]
+f_algebraic = Function('f_algebraic',[X_sym,U_sym],[mechanical_residual*force_scale,suspension_residual*force_scale])
 
 #==========================================================================
 # 15. DYNAMICS ODE — using Fz_sym
@@ -225,26 +250,36 @@ for k in range(N):
     k4 = f_dynamics(state + ds*k3, ctrl, s_grid[k+1])
 
     state_next = state + (ds/6)*(k1 + 2*k2 + 2*k3 + k4)
-
+    mech_eval,susp_eval = f_algebraic(state,ctrl)
+    
     g_dynamics.append(X[:,k+1] - state_next)
     lbg_dynamics.append(np.zeros((n_states,1)))
     ubg_dynamics.append(np.zeros((n_states,1)))
 
-    g_dynamics.append(ctrl[1]**2 + ctrl[2]**2 - (vehicle.mu0*(f_Ff(state))*force_scale)**2)
+    g_dynamics.append(ctrl[1]**2 + ctrl[2]**2 - (vehicle.mu0*(ctrl[9]))**2)
     lbg_dynamics.append(-np.inf)
     ubg_dynamics.append(0)
 
-    g_dynamics.append(ctrl[3]**2 + ctrl[4]**2 - (vehicle.mu0*(f_Ff(state))*force_scale)**2)
+    g_dynamics.append(ctrl[3]**2 + ctrl[4]**2 - (vehicle.mu0*(ctrl[10]))**2)
     lbg_dynamics.append(-np.inf)
     ubg_dynamics.append(0)
 
-    g_dynamics.append(ctrl[5]**2 + ctrl[6]**2 - (vehicle.mu0*(f_Fr(state))*force_scale)**2)
+    g_dynamics.append(ctrl[5]**2 + ctrl[6]**2 - (vehicle.mu0*(ctrl[11]))**2)
     lbg_dynamics.append(-np.inf)
     ubg_dynamics.append(0)
 
-    g_dynamics.append(ctrl[7]**2 + ctrl[8]**2 - (vehicle.mu0*(f_Fr(state))*force_scale)**2)
+    g_dynamics.append(ctrl[7]**2 + ctrl[8]**2 - (vehicle.mu0*(ctrl[12]))**2)
     lbg_dynamics.append(-np.inf)
     ubg_dynamics.append(0)
+
+    g_dynamics.append(mech_eval*force_scale)
+    lbg_dynamics.append(np.zeros((3,1)))
+    ubg_dynamics.append(np.zeros((3,1)))
+
+    g_dynamics.append(susp_eval*force_scale)
+    lbg_dynamics.append(0)
+    ubg_dynamics.append(0)
+
 
     g_time.append(state_next[0] - state[0])
     lbg_time.append((ds/vehicle.umax)*time_scale)
@@ -255,7 +290,7 @@ for k in range(N):
     ubg_power.append(vehicle.peakdrivingpower*force_scale*speed_scale)
 
     dt = (state_next[0] - state[0])/time_scale
-    cost = cost + e1*state[1]**2 + e2*state[5]**2 + dt*e0*(ctrl[0]**2 + ctrl[2]**2 + ctrl[3]**2 + ctrl[4]**2 + ctrl[5]**2 + ctrl[6]**2 + ctrl[7]**2 + ctrl[8]**2)
+    cost = cost + e1*state[1]**2 + e2*state[5]**2 + dt*e0*(ctrl[0]**2 + ctrl[1]**2 +ctrl[2]**2 + ctrl[3]**2 + ctrl[4]**2 + ctrl[5]**2 + ctrl[6]**2 + ctrl[7]**2 + ctrl[8]**2 + ctrl[9]**2 + ctrl[10]**2 + ctrl[11]**2 + ctrl[12]**2)
 
 cost = cost + X[0,-1]/time_scale
 
@@ -306,6 +341,11 @@ for r in range(N+1):
     idx_Fxrr = n_states*(N+1) + u_states*r + 7
     idx_Fyrr = n_states*(N+1) + u_states*r + 8
 
+    idx_Fzfl = n_states*(N+1) + u_states*r + 9
+    idx_Fzfr = n_states*(N+1) + u_states*r + 10
+    idx_Fzrl = n_states*(N+1) + u_states*r + 11
+    idx_Fzrr = n_states*(N+1) + u_states*r + 12
+
     # State bounds
     if r == 0:
         lbx[idx_t]   = 0;  ubx[idx_t]   = 0
@@ -349,6 +389,11 @@ for r in range(N+1):
         lbx[idx_Fxrr] = vehicle.peakbrakingtorque*vehicle.R*force_scale
         ubx[idx_Fxrr] = vehicle.peakdrivingtorque*vehicle.R*force_scale
         
+        lbx[idx_Fzrr] = 0
+        lbx[idx_Fzrl] = 0
+        lbx[idx_Fzfr] = 0
+        lbx[idx_Fzfl] = 0
+
         # Control initial guess
         x0[idx_delta] = 0
 
@@ -364,14 +409,21 @@ for r in range(N+1):
         x0[idx_Fxrr] = x0_ini.F_d_opt[r]*force_scale/4
         x0[idx_Fyrr] = x0_ini.F_n_opt[r]*force_scale/4
 
+        x0[idx_Fzrr] = vehicle.m*vehicle.g*(vehicle.l - vehicle.d)*force_scale/(2*vehicle.l)
+        x0[idx_Fzrl] = vehicle.m*vehicle.g*(vehicle.l - vehicle.d)*force_scale/(2*vehicle.l)
+
+        x0[idx_Fzfl] = vehicle.m*vehicle.g*vehicle.d*force_scale/(2*vehicle.l)
+        x0[idx_Fzfr] = vehicle.m*vehicle.g*vehicle.d*force_scale/(2*vehicle.l)
+        
+
 nlp = {'x': states,'f': cost,'g': g}
-opts = {'ipopt': {'max_iter': 4000,'print_level': 5,'mu_strategy': 'adaptive','acceptable_tol': 1e-3}}
+opts = {'ipopt': {'max_iter': 10000,'print_level': 5,'acceptable_tol': 1e-1}}
 solver = nlpsol('solver', 'ipopt', nlp, opts)
 sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
 full_sol = np.array(sol['x']).flatten()
 n_x_total =  6*(N + 1)
 X_opt = full_sol[:n_x_total].reshape((6, N + 1), order='F')
-U_opt = full_sol[n_x_total:].reshape((9, N), order='F')
+U_opt = full_sol[n_x_total:].reshape((13, N), order='F')
 print(f"Shape of X_opt is: {X_opt.shape}")
 print(f"Shape of U_opt is: {U_opt.shape}")
 
