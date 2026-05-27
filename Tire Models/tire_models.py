@@ -35,7 +35,6 @@ def combined_brush_tire_model(u,omega,alpha,Fz,vehicle):
     Pmax = 3*Fz/(4*a*w)
 
     # Slip Ratio Definition
-    eps = 1e-3
     #alpha = alpha_max*ca.tanh((alpha)/(alpha_max))
     kappa = (r*omega - (u))/(u)
     sigma_x = kappa/(1 + kappa)
