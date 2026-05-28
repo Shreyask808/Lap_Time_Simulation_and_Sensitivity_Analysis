@@ -29,7 +29,7 @@ plt.close('all')
 
  #=====================================================================================================================================================================================================================
 # User Inputs
-N = 1500                                                                                                    # Number of Segments on the track          
+N = 1000                                                                                                    # Number of Segments on the track          
 name = 'brush'
 
 #=====================================================================================================================================================================================================================
@@ -295,11 +295,11 @@ for k in range(N):
     lbg_dynamics.append(-np.inf)
     ubg_dynamics.append(0)
 
-    g_dynamics.append(mech_eval*force_scale)
+    g_dynamics.append(mech_eval)
     lbg_dynamics.append(np.zeros((3,1)))
     ubg_dynamics.append(np.zeros((3,1)))
 
-    g_dynamics.append(susp_eval*force_scale)
+    g_dynamics.append(susp_eval)
     lbg_dynamics.append(0)
     ubg_dynamics.append(0)
 
@@ -404,8 +404,8 @@ for r in range(N+1):
     lbx[idx_u]    = 2*speed_scale
     ubx[idx_u]    = vehicle.umax*speed_scale
 
-    lbx[idx_v]    = -vehicle.vmax*speed_scale
-    ubx[idx_v]    = vehicle.vmax*speed_scale
+    #lbx[idx_v]    = -vehicle.vmax*speed_scale
+    #ubx[idx_v]    = vehicle.vmax*speed_scale
 
     # State initial guess
     x0[idx_t]       = x0_ini.time_opt[r]*time_scale
