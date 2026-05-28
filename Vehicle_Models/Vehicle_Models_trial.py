@@ -221,6 +221,29 @@ ODE = vertcat(1/s_dot, n_N_dot/s_dot, psi_N_dot/s_dot,psi_ddot_N/s_dot, u_N_dot/
 f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 
 #==========================================================================
+# 11. CONTACT PATCH KINEMATICS
+#==========================================================================
+# Rear right
+u_rr = u + (vehicle.Wr/2)*psi_dot + eps
+v_rr = v - vehicle.d*psi_dot
+f_rr = Function('f_rr',[X_sym,U_sym],[u_rr,v_rr])
+
+# Rear left
+u_rl = u - (vehicle.Wr/2)*psi_dot + eps
+v_rl = v - vehicle.d*psi_dot
+f_rl = Function('f_rl',[X_sym,U_sym],[u_rl,v_rl])
+
+# Front left
+u_fl = u*cos(delta) + v*sin(delta) - (vehicle.Wf/2)*cos(delta)*psi_dot + (vehicle.l-vehicle.d)*sin(delta)*psi_dot + eps
+v_fl = -u*sin(delta) + v*cos(delta) + (vehicle.Wf/2)*sin(delta)*psi_dot + (vehicle.l-vehicle.d)*cos(delta)*psi_dot
+f_fl = Function('f_fl',[X_sym,U_sym],[u_fl,v_fl])
+
+# Front right
+u_fr = u*cos(delta) + v*sin(delta) + (vehicle.Wf/2)*cos(delta)*psi_dot + (vehicle.l-vehicle.d)*sin(delta)*psi_dot + eps
+v_fr = -u*sin(delta) + v*cos(delta) - (vehicle.Wf/2)*sin(delta)*psi_dot + (vehicle.l-vehicle.d)*cos(delta)*psi_dot
+f_fr = Function('f_fr',[X_sym,U_sym],[u_fr,v_fr])
+
+#==========================================================================
 # 16. NLP LOOP
 #==========================================================================
 g_dynamics  = []
@@ -236,8 +259,8 @@ lbg_power = []
 ubg_power = []
 
 cost = 0
-e0 = 1e-2
-e1 = 1e-2
+e0 = 1e-4
+e1 = 1e-4
 e2 = 1e-4
 
 for k in range(N):
@@ -280,6 +303,26 @@ for k in range(N):
     lbg_dynamics.append(0)
     ubg_dynamics.append(0)
 
+    U_FR,V_FR = f_fr(state,ctrl)
+    U_FL,V_FL = f_fl(state,ctrl)
+    U_RR,V_RR = f_rr(state,ctrl)
+    U_RL,V_RL = f_rl(state,ctrl)
+
+    g_dynamics.append(arctan(V_RL/U_RL))
+    lbg_dynamics.append(-vehicle.alpha_max)
+    ubg_dynamics.append(vehicle.alpha_max)
+
+    g_dynamics.append(arctan(V_FL/U_FL))
+    lbg_dynamics.append(-vehicle.alpha_max)
+    ubg_dynamics.append(vehicle.alpha_max)
+
+    g_dynamics.append(arctan(V_FR/U_FR))
+    lbg_dynamics.append(-vehicle.alpha_max)
+    ubg_dynamics.append(vehicle.alpha_max)
+
+    g_dynamics.append(arctan(V_RR/U_RR))
+    lbg_dynamics.append(-vehicle.alpha_max)
+    ubg_dynamics.append(vehicle.alpha_max)
 
     g_time.append(state_next[0] - state[0])
     lbg_time.append((ds/vehicle.umax)*time_scale)
@@ -447,6 +490,11 @@ Fyrl_opt = U_opt[6,:]/force_scale
 Fxrr_opt = U_opt[7,:]/force_scale
 Fyrr_opt = U_opt[8,:]/force_scale
 
+Fzfl_opt = U_opt[9,:]/force_scale
+Fzfr_opt = U_opt[10,:]/force_scale
+Fzrl_opt = U_opt[11,:]/force_scale
+Fzrr_opt = U_opt[12,:]/force_scale
+
 print(f"Optimized Lap Time is: {time_opt[-1]}")
 
 #====================================================================================================================================================================================================================
@@ -560,3 +608,25 @@ ax2.axhline(0,color='green')
 plt.tight_layout()
 plt.show()
 
+# Vehicle Normal Forces
+fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
+
+# Longitudinal Speed
+ax1.plot(s_grid[:-1],Fzfl_opt,color='black',label='Front Left')
+ax1.plot(s_grid[:-1],Fzfr_opt,color='blue',label='Front Right')
+ax1.plot(s_grid[:-1],Fzrl_opt,color='red',label='Rear Left')
+ax1.plot(s_grid[:-1],Fzrr_opt,color='orange',label='Rear Right')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Normal Forces')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='green')
+
+# Lateral Speed
+ax2.plot(s_grid[:-1],Fzfl_opt + Fzfr_opt + Fzrl_opt + Fzrr_opt,color='black',label='Front Left')
+ax2.set_xlabel('Track Centerline Arc Length [m]')
+ax2.set_ylabel('Total Normal Force')
+ax2.grid(True, alpha=0.3)
+ax2.axhline(0,color='green')
+
+plt.tight_layout()
+plt.show()
