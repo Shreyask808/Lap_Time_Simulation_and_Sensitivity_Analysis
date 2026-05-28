@@ -29,7 +29,7 @@ plt.close('all')
 
  #=====================================================================================================================================================================================================================
 # User Inputs
-N = 1000                                                                                                    # Number of Segments on the track          
+N = 700                                                                                                    # Number of Segments on the track          
 name = 'brush'
 
 #=====================================================================================================================================================================================================================
@@ -105,6 +105,7 @@ states = vertcat(reshape(X, -1, 1),reshape(U, -1, 1))
 X_sym  = SX.sym('X_sym',  n_states)    # symbolic state
 U_sym  = SX.sym('U_sym',  u_states)    # symbolic control
 s      = SX.sym('s')                   # arc length
+F = SX.sym('F')
 
 #==========================================================================
 # 6. SCALING
@@ -197,15 +198,19 @@ B = ca.vertcat(vehicle.m*vehicle.g - Lift, -(Fyrl + Fyrr + (Fyfl + Fyfr)*cos(del
 Fz_t = vertcat(Fzfl_t,Fzfr_t,Fzrl_t,Fzrr_t)
 
 eps = 1e-4
-Fz_phys = 0.5*(Fz_t + ca.sqrt(Fz_t**2 + eps))
-Fzfl_p = Fz_phys[0]
-Fzfr_p = Fz_phys[1]
-Fzrl_p = Fz_phys[2]
-Fzrr_p = Fz_phys[3]
+#Fz_phys = 0.5*(Fz_t + ca.sqrt(Fz_t**2 + eps))
+#Fzfl_p = Fz_phys[0]
+#Fzfr_p = Fz_phys[1]
+#Fzrl_p = Fz_phys[2]
+#Fzrr_p = Fz_phys[3]
 
-mechanical_residual = ca.mtimes(A[0:3,:],Fz_phys) - B[0:3]
+mechanical_residual = ca.mtimes(A[0:3,:],Fz_t) - B[0:3]
 suspension_residual = ca.mtimes(A[3,:],Fz_t) - B[3]
 f_algebraic = Function('f_algebraic',[X_sym,U_sym],[mechanical_residual*force_scale,suspension_residual*force_scale])
+
+
+mu = vehicle.constant*(F**vehicle.n)
+f_mu = Function('f_mu',[F],[mu])
 
 #==========================================================================
 # 15. DYNAMICS ODE — using Fz_sym
@@ -279,19 +284,19 @@ for k in range(N):
     lbg_dynamics.append(np.zeros((n_states,1)))
     ubg_dynamics.append(np.zeros((n_states,1)))
 
-    g_dynamics.append(ctrl[1]**2 + ctrl[2]**2 - (vehicle.mu0*(ctrl[9]))**2)
+    g_dynamics.append(ctrl[1]**2 + ctrl[2]**2 - (f_mu(ctrl[9]/force_scale)*(ctrl[9]))**2)
     lbg_dynamics.append(-np.inf)
     ubg_dynamics.append(0)
 
-    g_dynamics.append(ctrl[3]**2 + ctrl[4]**2 - (vehicle.mu0*(ctrl[10]))**2)
+    g_dynamics.append(ctrl[3]**2 + ctrl[4]**2 - (f_mu(ctrl[10]/force_scale)*(ctrl[10]))**2)
     lbg_dynamics.append(-np.inf)
     ubg_dynamics.append(0)
 
-    g_dynamics.append(ctrl[5]**2 + ctrl[6]**2 - (vehicle.mu0*(ctrl[11]))**2)
+    g_dynamics.append(ctrl[5]**2 + ctrl[6]**2 - (f_mu(ctrl[11]/force_scale)*(ctrl[11]))**2)
     lbg_dynamics.append(-np.inf)
     ubg_dynamics.append(0)
 
-    g_dynamics.append(ctrl[7]**2 + ctrl[8]**2 - (vehicle.mu0*(ctrl[12]))**2)
+    g_dynamics.append(ctrl[7]**2 + ctrl[8]**2 - (f_mu(ctrl[12]/force_scale)*(ctrl[12]))**2)
     lbg_dynamics.append(-np.inf)
     ubg_dynamics.append(0)
 
