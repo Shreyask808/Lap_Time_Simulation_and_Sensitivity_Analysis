@@ -51,7 +51,9 @@ vehicle.R = 0.360                                                           # Ti
 vehicle.w = 0.305                                                           # Tire width in m
 vehicle.Cp = 4e6                                                            # Tire stiffness per unit length in N/m^2
 vehicle.mu0 = 1.7                                                           # Static friction coefficient [.]
-vehicle.mu = 1.1                                                            # Sliding friction coefficient [.]
+vehicle.mu = 1                                                            # Sliding friction coefficient [.]
+vehicle.n = np.log(vehicle.mu0/vehicle.mu)/np.log(9000/2000)                # Friction Coefficient curve Exponent
+vehicle.constant = vehicle.mu0/(2000**vehicle.n)                            # Friction Coefficient curve constant
 vehicle.kv = 2e5                                                            # Vertical stiffness of the tire in N.m
 vehicle.alpha_max = math.radians(15.0)                                      # Maximum tire slip angle in rad
 vehicle.Crr = 0                                                             # Tire rolling resistance coefficient [.]
@@ -71,6 +73,8 @@ vehicle.g = 9.81                                                            # Gr
 vehicle.umax = ((2*vehicle.peakdrivingpower)/(vehicle.rho*vehicle.Cd*vehicle.A))**(1/3) # Maximum Longitudinal Velocity in m/s
 vehicle.vmax = vehicle.umax*np.tan(vehicle.alpha_max)                       # Maximum Lateral Velocity in m/s
 
+print(f"n: {vehicle.n}")
+print(f"Constant: {vehicle.constant}")
 #=====================================================================================================================================================================================================================
 # Save Track Data
 root = tk.Tk()
