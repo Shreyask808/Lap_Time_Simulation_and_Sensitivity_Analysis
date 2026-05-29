@@ -264,8 +264,8 @@ lbg_power = []
 ubg_power = []
 
 cost = 0
-e0 = 1e-4
-e1 = 1e-4
+e0 = 1e-2
+e1 = 1e-2
 e2 = 1e-4
 
 for k in range(N):
@@ -305,7 +305,7 @@ for k in range(N):
     ubg_dynamics.append(np.zeros((3,1)))
 
     g_dynamics.append(susp_eval)
-    lbg_dynamics.append(0)
+    lbg_dynamics.append(-np.inf)
     ubg_dynamics.append(0)
 
     U_FR,V_FR = f_fr(state,ctrl)
@@ -338,7 +338,7 @@ for k in range(N):
     ubg_power.append(vehicle.peakdrivingpower*force_scale*speed_scale)
 
     dt = (state_next[0] - state[0])/time_scale
-    cost = cost + e1*state[1]**2 + e2*state[5]**2 + dt*e0*(ctrl[0]**2 + ctrl[1]**2 +ctrl[2]**2 + ctrl[3]**2 + ctrl[4]**2 + ctrl[5]**2 + ctrl[6]**2 + ctrl[7]**2 + ctrl[8]**2 + ctrl[9]**2 + ctrl[10]**2 + ctrl[11]**2 + ctrl[12]**2)
+    cost = cost + dt*(e1*state[1]**2 + e2*state[5]**2 + e0*(ctrl[0]**2 + ctrl[1]**2 +ctrl[2]**2 + ctrl[3]**2 + ctrl[4]**2 + ctrl[5]**2 + ctrl[6]**2 + ctrl[7]**2 + ctrl[8]**2 + ctrl[9]**2 + ctrl[10]**2 + ctrl[11]**2 + ctrl[12]**2))
 
 cost = cost + X[0,-1]/time_scale
 
