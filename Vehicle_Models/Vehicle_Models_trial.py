@@ -183,7 +183,7 @@ xi    = psi - theta
 #==========================================================================
 # 10. AERODYNAMICS
 #==========================================================================
-Drag = -(1/2)*vehicle.Cd*vehicle.rho*vehicle.A*(u**2)
+Drag = (1/2)*vehicle.Cd*vehicle.rho*vehicle.A*(u**2)
 Lift =  (1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(u**2)
 f_Lift = Function('f_Lift',[X_sym[4]],[Lift])
 f_Drag = Function('f_Drag',[X_sym[4]],[Drag])
