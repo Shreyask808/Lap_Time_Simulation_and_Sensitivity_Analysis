@@ -264,9 +264,9 @@ lbg_power = []
 ubg_power = []
 
 cost = 0
-e0 = 1e-2
-e1 = 1e-2
-e2 = 1e-4
+e0 = 1e-6
+e1 = 0
+e2 = 1e-6
 
 for k in range(N):
     s_current = s_grid[k]
