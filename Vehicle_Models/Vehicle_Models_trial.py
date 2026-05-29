@@ -426,10 +426,10 @@ for r in range(N+1):
         ubx[idx_delta] = vehicle.delta_max*angle_scale
 
         lbx[idx_Fxfl] = vehicle.peakbrakingtorque*vehicle.R*force_scale
-        ubx[idx_Fxfl] = vehicle.peakdrivingtorque*vehicle.R*force_scale
+        ubx[idx_Fxfl] = 0
 
         lbx[idx_Fxfr] = vehicle.peakbrakingtorque*vehicle.R*force_scale
-        ubx[idx_Fxfr] = vehicle.peakdrivingtorque*vehicle.R*force_scale
+        ubx[idx_Fxfr] = 0
 
         lbx[idx_Fxrl] = vehicle.peakbrakingtorque*vehicle.R*force_scale
         ubx[idx_Fxrl] = vehicle.peakdrivingtorque*vehicle.R*force_scale
@@ -445,16 +445,16 @@ for r in range(N+1):
         # Control initial guess
         x0[idx_delta] = 0
 
-        x0[idx_Fxfl] = x0_ini.F_d_opt[r]*force_scale/4
+        x0[idx_Fxfl] = 0
         x0[idx_Fyfl] = x0_ini.F_n_opt[r]*force_scale/4
         
-        x0[idx_Fxfr] = x0_ini.F_d_opt[r]*force_scale/4
+        x0[idx_Fxfr] = 0
         x0[idx_Fyfr] = x0_ini.F_n_opt[r]*force_scale/4
 
-        x0[idx_Fxrl] = x0_ini.F_d_opt[r]*force_scale/4
+        x0[idx_Fxrl] = x0_ini.F_d_opt[r]*force_scale/2
         x0[idx_Fyrl] = x0_ini.F_n_opt[r]*force_scale/4
         
-        x0[idx_Fxrr] = x0_ini.F_d_opt[r]*force_scale/4
+        x0[idx_Fxrr] = x0_ini.F_d_opt[r]*force_scale/2
         x0[idx_Fyrr] = x0_ini.F_n_opt[r]*force_scale/4
 
         x0[idx_Fzrr] = vehicle.m*vehicle.g*(vehicle.l - vehicle.d)*force_scale/(2*vehicle.l)
