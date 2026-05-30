@@ -305,7 +305,7 @@ for k in range(N):
     ubg_dynamics.append(np.zeros((3,1)))
 
     g_dynamics.append(susp_eval)
-    lbg_dynamics.append(-np.inf)
+    lbg_dynamics.append(0)
     ubg_dynamics.append(0)
 
     U_FR,V_FR = f_fr(state,ctrl)
