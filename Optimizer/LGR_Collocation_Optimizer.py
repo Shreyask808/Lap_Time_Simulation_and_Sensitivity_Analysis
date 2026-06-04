@@ -27,8 +27,8 @@ plt.close('all')
 
 #=======================================================================================================================================================================================================================
 # User Inputs
-h = 60                                                                                                          # Number of Segments the Track is divided into
-p = 5                                                                                                          # Degree of the Polynomial approximating the state in segments
+h = 60                                                                              # Number of Segments the Track is divided into
+p = 5                                                                               # Degree of the Polynomial approximating the state in segments
 
 print(f"#================================================================================================================================================================================================================")
 print(f"")
@@ -48,8 +48,8 @@ else:
 
 # Track Segmentation
 segment_length = track_data.arc_s[-1]/h
-print(f"track length in m is: {track_data.arc_s[-1]}")
-print(f"Segment Length in m is: {segment_length}")
+print(f"track length in m is: {track_data.arc_s[-1]} [m]")
+print(f"Segment Length in m is: {segment_length} [m]")
 print(f"")
 print(f"#================================================================================================================================================================================================================")
 print(f"#================================================================================================================================================================================================================")
@@ -65,7 +65,7 @@ if file_path2:
         vehicledata = json.load(f)
         vehicle = SimpleNamespace(**vehicledata)
     print("Loaded Vehicle Data")
-    print(f"Mass of the Vehicle: {vehicle.m}")
+    print(f"Mass of the Vehicle: {vehicle.m} [kg]")
 else:
     raise FileNotFoundError("Vehicle Data not found")
 print(f"")
@@ -88,3 +88,61 @@ print(f"")
 print(f"Flipped LGR Points used in Analysis are: {col_p}")
 print(f"")
 print(f"#================================================================================================================================================================================================================")
+
+#=======================================================================================================================================================================================================================
+# Point mass optimization for intial conditions
+#=======================================================================================================================================================================================================================
+# Point Mass Dynamics Definition
+## Symbolic Variable Definition
+X_sym = SX.sym('X_sym',1,4)
+U_sym = SX.sym('U_sym',1,2)
+s = SX.sym('s')
+
+## Interpolation Functions 
+f_kappa = ca.interpolant('f_kappa','bspline',[track_data.arc_s.tolist()],track_data.omega_z.tolist())
+f_nl = ca.interpolant('f_nl','linear',[track_data.arc_s.tolist()],track_data.nl.tolist())
+f_nr = ca.interpolant('f_nr','linear',[track_data.arc_s.tolist()],track_data.nr.tolist())
+f_theta = ca.interpolant('f_theta','linear',[track_data.arc_s.tolist()],track_data.theta.tolist())
+
+## Scaling Factors
+force_scale = 1/(vehicle.m*vehicle.g)                                                                               # Force Scale [N^-1]
+length_scale = 1/vehicle.l                                                                                          # Length Scale [m^-1]
+time_scale = np.sqrt(vehicle.g/vehicle.l)                                                                           # Time Scale [sec^-1]
+speed_scale = length_scale/time_scale                                                                               # Speed Scale [sec/m]
+angle_scale = 1                                                                                                     # Angle Scale [rad^-1]
+
+### States Definition
+t_N = X_sym[0]                                                                                                      # Normalized Time
+n_N = X_sym[1]                                                                                                      # Normalized Lateral offset from track centerline
+u_N = X_sym[2]                                                                                                      # Normalized Longitudinal velocity of the point mass
+v_N = X_sym[3]                                                                                                      # Normalized Lateral velocity of the point mass
+
+### Control Definition
+F_d_N = U_sym[0]                                                                                                    # Normalized Drive Force of the point mass
+F_n_N = U_sym[1]                                                                                                    # Normalized Centripital Force of the point mass
+
+### States
+t_sym = t_N/time_scale
+n_sym = n_N/length_scale
+u_sym = u_N/speed_scale
+v_sym = v_N/speed_scale
+
+### Controls
+F_d_sym = F_d_N/force_scale
+F_n_sym = F_n_N/force_scale
+
+### Aerodynamic Forces
+Drag = (1/2)*vehicle.Cd*vehicle.rho*vehicle.A*(u_sym**2)                                                            # Drag Force Definition [N]
+Lift = (1/2)*vehicle.Cl*vehicle.rho*vehicle.A*(u_sym**2)
+f_Drag = Function('f_Drag',[X_sym[2]],[Drag])
+f_Lift = Function('f_Lift',[X_sym[2]],[Lift])
+curv = f_kappa(s)
+
+#### Dynamics
+s_dot = (1/time_scale)*(u_sym)/(1 - n_sym*curv)
+n_dot_N = (length_scale/time_scale)*v_sym
+u_dot_N = (length_scale/time_scale**2)*((F_d_sym - Drag)/vehicle.m + v_sym*u_sym*curv/(1 - n_sym*curv))
+v_dot_N = (length_scale/time_scale**2)*(F_n_sym/vehicle.m - (u_sym**2)*curv/(1 - n_sym*curv))
+
+ODE = horzcat(1/s_dot,n_dot_N/s_dot,u_dot_N/s_dot,v_dot_N/s_dot)
+f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
