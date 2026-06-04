@@ -96,13 +96,6 @@ def lagrange_polynomials(col_p,I,N):
 
     return tau,L_ki,D_ki
 
-tau,L_ki, D_ki = lagrange_polynomials(col_p,3,p)
-f_Dki = Function('f_Dki',[tau],[D_ki])
-
-val = f_Dki(col_p[0])
-print(f"Lagrange Polynomial is : {L_ki}")
-print(f"Derivative of Lagrange Polynomial at 1st LGR Collocation point is : {float(val)}")
-
 print(f"#================================================================================================================================================================================================================")
 print(f"")
 print(f"Flipped LGR Points used in Analysis are: {col_p}")
@@ -166,3 +159,18 @@ v_dot_N = (length_scale/time_scale**2)*(F_n_sym/vehicle.m - (u_sym**2)*curv/(1 -
 
 ODE = horzcat(1/s_dot,n_dot_N/s_dot,u_dot_N/s_dot,v_dot_N/s_dot)
 f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
+
+# Gauss Pseudospectral Differentiation Matrix Definition
+D = np.zeros((p,p+1))
+for i in range(p+1):
+    tau,L_ki, D_ki = lagrange_polynomials(col_p,i,p)
+    f_Dki = Function('f_Dki',[tau],[D_ki])
+    for k in range(p):
+        D[k,i] = f_Dki(col_p[k+1])
+
+print(f"#================================================================================================================================================================================================================")
+print(f"")
+print(f"D shape: {D.shape}")
+print(f"D:\n{D}")
+print(f"")
+print(f"#================================================================================================================================================================================================================")
