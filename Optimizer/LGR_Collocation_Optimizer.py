@@ -83,6 +83,26 @@ def flipped_LGR_points(N):
 
 col_p = flipped_LGR_points(p)
 
+## Lagrange Polynomial and its Derivative
+def lagrange_polynomials(col_p,I,N):
+    tau = SX.sym('tau')
+    L_ki = SX(1)
+    D_ki = SX(1)
+    for j in range(N+1):
+        if j != I:
+            L_ki = L_ki*(tau - col_p[j])/(col_p[I] - col_p[j])
+    
+    D_ki = jacobian(L_ki,tau)
+
+    return tau,L_ki,D_ki
+
+tau,L_ki, D_ki = lagrange_polynomials(col_p,3,p)
+f_Dki = Function('f_Dki',[tau],[D_ki])
+
+val = f_Dki(col_p[0])
+print(f"Lagrange Polynomial is : {L_ki}")
+print(f"Derivative of Lagrange Polynomial at 1st LGR Collocation point is : {float(val)}")
+
 print(f"#================================================================================================================================================================================================================")
 print(f"")
 print(f"Flipped LGR Points used in Analysis are: {col_p}")
