@@ -181,9 +181,15 @@ print(f"")
 print(f"#================================================================================================================================================================================================================")
 
 # Nonlinear Program Solver (NLP) Definition for Point Mass
+## Dynamics Constraints
 g_dynamics = []
 lbg_dynamics = []
 ubg_dynamics = []
+
+## Continuity Constraints
+g_continuity = []
+lbg_continuity = []
+ubg_continuity = []
 
 for k in range(h):
     F_dynamics = []
