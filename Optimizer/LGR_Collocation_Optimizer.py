@@ -27,8 +27,8 @@ plt.close('all')
 
 #=======================================================================================================================================================================================================================
 # User Inputs
-h = 100                                                                              # Number of Segments the Track is divided into
-p = 10                                                                               # Degree of the Polynomial approximating the state in segments
+h = 200                                                                              # Number of Segments the Track is divided into
+p = 3                                                                               # Degree of the Polynomial approximating the state in segments
 
 print(f"#================================================================================================================================================================================================================")
 print(f"")
@@ -251,7 +251,7 @@ for k in range(h):
         lbg_tire.append(-np.inf)
         ubg_tire.append(0)
            
-    g_dynamics.append(ca.mtimes(ca.DM(D), X_segment) - F_dynamics)
+    g_dynamics.append(ca.mtimes(ca.DM(D), X_segment) - (segment_length/2)*F_dynamics)
     lbg_dynamics.append(np.zeros(F_dynamics.shape))
     ubg_dynamics.append(np.zeros(F_dynamics.shape))
 
@@ -269,11 +269,12 @@ lbg_end.append(np.zeros((1,3)))
 ubg_end.append(np.zeros((1,3)))
 
 ## Net Constraints
-g = vertcat(*[ca.vec(g) for g in g_dynamics],*[ca.vec(g) for g in g_time],*[ca.vec(g) for g in g_power],*[ca.vec(g) for g in g_tire],*[ca.vec(g) for g in g_end])
+g = vertcat(*[ca.vec(g) for g in g_dynamics],*[ca.vec(g) for g in g_continuity],*[ca.vec(g) for g in g_time],*[ca.vec(g) for g in g_power],*[ca.vec(g) for g in g_tire],*[ca.vec(g) for g in g_end])
 # Convert every single list element to a flattened column vector (n, 1)
 # You MUST be consistent: if you use ca.vec() for 'g', you must use it for 'lbg' and 'ubg'
 lbg = vertcat(
     *[vec(b) for b in lbg_dynamics],
+    *[vec(b) for b in lbg_continuity],
     *[vec(b) for b in lbg_time],
     *[vec(b) for b in lbg_power],
     *[vec(b) for b in lbg_tire],
@@ -282,6 +283,7 @@ lbg = vertcat(
 
 ubg = vertcat(
     *[vec(b) for b in ubg_dynamics],
+    *[vec(b) for b in ubg_continuity],
     *[vec(b) for b in ubg_time],
     *[vec(b) for b in ubg_power],
     *[vec(b) for b in ubg_tire],
@@ -461,16 +463,16 @@ fig.show()
 fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
 
 # Longitudinal Velocity
-ax1.plot(arc_s,u_opt,color='black')
+ax1.plot(arc_s,u_opt*18/5,color='black')
 ax1.set_xlabel('Track Centerline Arc Length [m]')
-ax1.set_ylabel('Longitudinal Vehicle Velocity [m/s]')
+ax1.set_ylabel('Longitudinal Vehicle Velocity [kmph]')
 ax1.grid(True, alpha=0.3)
 ax1.axhline(0,color='green')
 
 # Lateral Velocity
-ax2.plot(arc_s,v_opt,color='black')
+ax2.plot(arc_s,v_opt*18/5,color='black')
 ax2.set_xlabel('Track Centerline Arc Length [m]')
-ax2.set_ylabel('Lateral Vehicle Velocity [m/s]')
+ax2.set_ylabel('Lateral Vehicle Velocity [kmph]')
 ax2.grid(True, alpha=0.3)
 ax2.axhline(0,color='green')
 
