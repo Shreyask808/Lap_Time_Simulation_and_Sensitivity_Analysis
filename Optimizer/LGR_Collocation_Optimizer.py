@@ -201,10 +201,15 @@ g_power = []
 lbg_power = []
 ubg_power = []
 
-## Tire Force Limits
+## Tire Force Constraints
 g_tire = []
 lbg_tire = []
 ubg_tire = []
+
+## Closed Loop Racing Line Constraints
+g_end = []
+lbg_end = []
+ubg_end = []
 
 ## Main Loop
 for k in range(h):
@@ -258,6 +263,30 @@ print(f"Shape of ubg_dynamics:{len(ubg_dynamics)}")
 print(f"")
 print(f"#================================================================================================================================================================================================================")
 
+## Closed Loop Constraint
+g_end.append(X[-1,[1,2,3]] - X[0,[1,2,3]])
+lbg_end.append(np.zeros((1,3)))
+ubg_end.append(np.zeros((1,3)))
+
+## Net Constraints
+g = vertcat(*[ca.vec(g) for g in g_dynamics],*[ca.vec(g) for g in g_time],*[ca.vec(g) for g in g_power],*[ca.vec(g) for g in g_tire],*[ca.vec(g) for g in g_end])
+# Convert every single list element to a flattened column vector (n, 1)
+# You MUST be consistent: if you use ca.vec() for 'g', you must use it for 'lbg' and 'ubg'
+lbg = vertcat(
+    *[vec(b) for b in lbg_dynamics],
+    *[vec(b) for b in lbg_time],
+    *[vec(b) for b in lbg_power],
+    *[vec(b) for b in lbg_tire],
+    *[vec(b) for b in lbg_end]
+)
+
+ubg = vertcat(
+    *[vec(b) for b in ubg_dynamics],
+    *[vec(b) for b in ubg_time],
+    *[vec(b) for b in ubg_power],
+    *[vec(b) for b in ubg_tire],
+    *[vec(b) for b in ubg_end]
+)
 ## Cost Function Definition
 cost = 0
 cost = X[-1,0]/time_scale
@@ -267,15 +296,67 @@ lbx = np.full(states.shape, -np.inf)
 ubx = np.full(states.shape, np.inf)
 x0 = np.zeros(states.numel())
 
-states_num = h*(p+1)*4 - 1
+states_num = h*(p+1)*4
 
 ## Indexing Loop
 for r in range(h):
+    s_0 = r*segment_length
+    s_f = (r+1)*segment_length
+    s_idx = ((s_f - s_0)/2)*col_p + ((s_0 + s_f)/2)
     for q in range(p+1):
+        s_current = s_idx[q]
         idx_t = 4*(p+1)*r + 4*(q)
         idx_n = idx_t + 1
         idx_u = idx_t + 2
         idx_v = idx_t + 3
 
-        idx_Fd = 
+        # Time Limits and Initial Guess
+        if r == 0 and q == 0:
+            lbx[idx_t] = 0
+            ubx[idx_t] = 0
+        else:
+            lbx[idx_t] = 0
+            ubx[idx_t] = 500*time_scale
+        x0[idx_t] = (s_current/vehicle.umax)*time_scale
 
+        # Lateral Offset Limits and Initial Guess
+        lbx[idx_n] = (f_nr(s_current))*length_scale
+        ubx[idx_n] = (f_nl(s_current))*length_scale
+        x0[idx_n] = 0
+
+        # Longitudinal Velocity Limits and Initial Guess
+        lbx[idx_u] = 2*speed_scale
+        ubx[idx_u] = vehicle.umax*speed_scale
+        x0[idx_u] = vehicle.umax*speed_scale
+
+        # Lateral Velocity Limits and Initial Guess
+        lbx[idx_v] = -vehicle.vmax*speed_scale
+        ubx[idx_v] = vehicle.vmax*speed_scale
+        x0[idx_v] = 0
+
+        if q <p:
+            # Drive / Brake Force Limits and Initial Guess
+            idx_Fd = h*(p+1)*4 + 2*(p)*r + 2*(q)
+            lbx[idx_Fd] = (4*vehicle.peakbrakingtorque/vehicle.R)*force_scale
+            ubx[idx_Fd] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
+            x0[idx_Fd] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
+
+            # Lateral Force Limits and Initial Guess
+            idx_Fn = idx_Fd + 1
+            lbx[idx_Fn] = -(vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
+            ubx[idx_Fn] = (vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
+            x0[idx_Fn] = 0
+
+# Nonlinear Solver for Point Mass Model
+print(f"#================================================================================================================================================================================================================")
+print(f"")
+print(f"IPOPT Solver Running - ")
+print(f"")
+nlp = {'x': states,'f': cost,'g': g}
+opts = {'ipopt': {'max_iter': 4000,'print_level': 5,'mu_strategy': 'adaptive'}}
+solver = nlpsol('solver', 'ipopt', nlp, opts)
+sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
+full_sol = np.array(sol['x']).flatten()
+
+print(f"")
+print(f"#================================================================================================================================================================================================================")
