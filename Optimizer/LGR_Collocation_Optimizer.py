@@ -175,8 +175,8 @@ for i in range(p+1):
 
 print(f"#================================================================================================================================================================================================================")
 print(f"")
-print(f"D shape: {D.shape}")
-print(f"D:\n{D}")
+print(f"Shape of the Gauss Pseudospectral Differentiation Matrix (D): {D.shape}")
+print(f"Gauss Pseudospectral Differentiation Matrix (D):\n{D}")
 print(f"")
 print(f"#================================================================================================================================================================================================================")
 
@@ -242,15 +242,40 @@ for k in range(h):
         ubg_power.append(vehicle.peakdrivingpower)
 
         # Tire Force Constraint
-        g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift[state[2]]))**2)
+        g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(state[2])))**2)
         lbg_tire.append(-np.inf)
         ubg_tire.append(0)
            
     g_dynamics.append(ca.mtimes(ca.DM(D), X_segment) - F_dynamics)
     lbg_dynamics.append(np.zeros(F_dynamics.shape))
     ubg_dynamics.append(np.zeros(F_dynamics.shape))
-    
 
+print(f"#================================================================================================================================================================================================================")
+print(f"")    
 print(f"Shape of g_dynamics:{len(g_dynamics)}")
 print(f"Shape of lbg_dynamics:{len(lbg_dynamics)}")
 print(f"Shape of ubg_dynamics:{len(ubg_dynamics)}")
+print(f"")
+print(f"#================================================================================================================================================================================================================")
+
+## Cost Function Definition
+cost = 0
+cost = X[-1,0]/time_scale
+
+## Limits and Initial Guess Definition
+lbx = np.full(states.shape, -np.inf)
+ubx = np.full(states.shape, np.inf)
+x0 = np.zeros(states.numel())
+
+states_num = h*(p+1)*4 - 1
+
+## Indexing Loop
+for r in range(h):
+    for q in range(p+1):
+        idx_t = 4*(p+1)*r + 4*(q)
+        idx_n = idx_t + 1
+        idx_u = idx_t + 2
+        idx_v = idx_t + 3
+
+        idx_Fd = 
+
