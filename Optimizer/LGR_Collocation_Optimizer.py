@@ -202,6 +202,12 @@ for k in range(h):
     s_segment = ((sf - s0)/2)*col_p + ((s0+sf)/2)
     X_segment = X[k*(p+1):((k+1)*(p+1)),:]
     U_segment = U[k*p:(k+1)*p,:]
+    
+    if k < (h-1):
+        g_continuity.append(X[(k+1)*(p+1),:] - X[(k+1)*(p+1)-1,:])
+        lbg_continuity.append(np.zeros((1,4)))
+        ubg_continuity.append(np.zeros((1,4)))
+    
     for z in range(p):
         state = X_segment[z+1,:]
         ctrl = U_segment[z,:]
