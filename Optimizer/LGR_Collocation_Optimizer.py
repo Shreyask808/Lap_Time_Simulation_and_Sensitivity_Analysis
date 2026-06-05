@@ -196,6 +196,16 @@ g_time = []
 lbg_time = []
 ubg_time = []
 
+## Power Constraints
+g_power = []
+lbg_power = []
+ubg_power = []
+
+## Tire Force Limits
+g_tire = []
+lbg_tire = []
+ubg_tire = []
+
 ## Main Loop
 for k in range(h):
     F_dynamics = []
@@ -217,11 +227,24 @@ for k in range(h):
     for z in range(p):
         state = X_segment[z+1,:]
         ctrl = U_segment[z,:]
+
+        # Dynamics Derivation
         F_dynamics = vertcat(F_dynamics,f_dynamics(state,ctrl,s_segment[z+1]))
 
+        # Forward Time Constraint
         g_time.append(X_segment[z+1,0] - X_segment[z,0])
         lbg_time.append(1e-6)
         ubg_time.append(np.inf)
+
+        # Vehicle Power Constraint
+        g_power.append(state[2]*ctrl[0]/(force_scale*speed_scale))
+        lbg_power.append(vehicle.peakbrakingpower)
+        ubg_power.append(vehicle.peakdrivingpower)
+
+        # Tire Force Constraint
+        g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift[state[2]]))**2)
+        lbg_tire.append(-np.inf)
+        ubg_tire.append(0)
            
     g_dynamics.append(ca.mtimes(ca.DM(D), X_segment) - F_dynamics)
     lbg_dynamics.append(np.zeros(F_dynamics.shape))
