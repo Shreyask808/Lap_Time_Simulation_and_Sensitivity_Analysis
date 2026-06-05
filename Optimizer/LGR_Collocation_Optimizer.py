@@ -78,7 +78,7 @@ print(f"#=======================================================================
 def flipped_LGR_points(N):
 
     nodes, weights = roots_jacobi(N,1,0)
-    col_points = np.sort(np.concatenate([nodes,[1.0]]))
+    col_points = np.sort(np.concatenate([[-1],nodes]))
     return col_points
 
 col_p = flipped_LGR_points(p)
@@ -160,13 +160,18 @@ v_dot_N = (length_scale/time_scale**2)*(F_n_sym/vehicle.m - (u_sym**2)*curv/(1 -
 ODE = horzcat(1/s_dot,n_dot_N/s_dot,u_dot_N/s_dot,v_dot_N/s_dot)
 f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 
+# Global State Definition
+X = SX.sym('X',h*(p+1),4)
+U = SX.sym('U',h*p,2)
+states = vertcat(reshape(X, -1, 1), reshape(U, -1, 1))
+
 # Gauss Pseudospectral Differentiation Matrix Definition
 D = np.zeros((p,p+1))
 for i in range(p+1):
     tau,L_ki, D_ki = lagrange_polynomials(col_p,i,p)
     f_Dki = Function('f_Dki',[tau],[D_ki])
-    for k in range(p):
-        D[k,i] = f_Dki(col_p[k+1])
+    for j in range(p):
+        D[j,i] = f_Dki(col_p[j+1])
 
 print(f"#================================================================================================================================================================================================================")
 print(f"")
@@ -174,3 +179,32 @@ print(f"D shape: {D.shape}")
 print(f"D:\n{D}")
 print(f"")
 print(f"#================================================================================================================================================================================================================")
+
+# Nonlinear Program Solver (NLP) Definition for Point Mass
+g_dynamics = []
+lbg_dynamics = []
+ubg_dynamics = []
+
+for k in range(h):
+    F_dynamics = []
+    X_segment = []
+    U_segment = []
+    s_segment = []
+    
+    s0 = k*segment_length
+    sf = (k+1)*segment_length
+    s_segment = ((sf - s0)/2)*col_p + ((s0+sf)/2)
+    X_segment = X[k*(p+1):((k+1)*(p+1)),:]
+    U_segment = U[k*p:(k+1)*p,:]
+    for z in range(p):
+        state = X_segment[z+1,:]
+        ctrl = U_segment[z,:]
+        F_dynamics = vertcat(F_dynamics,f_dynamics(state,ctrl,s_segment[z+1]))   
+    g_dynamics.append(ca.mtimes(ca.DM(D), X_segment) - F_dynamics)
+    lbg_dynamics.append(np.zeros(F_dynamics.shape))
+    ubg_dynamics.append(np.zeros(F_dynamics.shape))
+    
+
+print(f"Shape of g_dynamics:{len(g_dynamics)}")
+print(f"Shape of lbg_dynamics:{len(lbg_dynamics)}")
+print(f"Shape of ubg_dynamics:{len(ubg_dynamics)}")
