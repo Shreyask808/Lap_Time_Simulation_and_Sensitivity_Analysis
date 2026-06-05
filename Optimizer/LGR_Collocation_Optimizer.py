@@ -295,7 +295,7 @@ cost = X[-1,0]/time_scale
 lbx = np.full(states.shape, -np.inf)
 ubx = np.full(states.shape, np.inf)
 x0 = np.zeros(states.numel())
-
+arc_s = []
 states_num = h*(p+1)*4
 
 ## Indexing Loop
@@ -306,7 +306,8 @@ for node in range(h*(p+1)):
     s_f = (r+1)*segment_length
     s_idx = ((s_f - s_0)/2)*col_p + ((s_0 + s_f)/2)
     s_current = s_idx[q]
-    
+    arc_s.append(s_current)
+
     idx_t = node
     idx_n = h*(p+1) + node
     idx_u = 2*h*(p+1) + node
@@ -360,10 +361,131 @@ solver = nlpsol('solver', 'ipopt', nlp, opts)
 sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
 full_sol = np.array(sol['x']).flatten()
 
+arc_s = np.array(arc_s)
+time_opt = full_sol[:h*(p+1)]/time_scale
+full_sol = full_sol[h*(p+1):]
 
+n_opt = full_sol[:h*(p+1)]/length_scale
+full_sol = full_sol[h*(p+1):]
+
+u_opt = full_sol[:h*(p+1)]/speed_scale
+full_sol = full_sol[h*(p+1):]
+
+v_opt = full_sol[:h*(p+1)]/speed_scale
+full_sol = full_sol[h*(p+1):]
+
+F_d_opt = full_sol[:h*p]/force_scale
+full_sol = full_sol[h*p:]
+
+F_n_opt = full_sol[:h*p]/force_scale
 print(f"")
 print(f"#================================================================================================================================================================================================================")
 
 # Results
 print(f"#================================================================================================================================================================================================================")
 print(f"")
+print(f"Optimal Lap Time in Seconds is: {time_opt[-1]} [sec]")
+print(f"Shape of arc_s : {arc_s.shape}")
+print(f"Shape of Time Vector: {time_opt.shape}")
+print(f"Shape of N Vector: {n_opt.shape}")
+print(f"Shape of U Vector: {u_opt.shape}")
+print(f"Shape of V Vector: {v_opt.shape}")
+print(f"Shape of F_d Vector: {F_d_opt.shape}")
+print(f"Shape of F_n Vector: {F_n_opt.shape}")
+print(f"")
+print(f"#================================================================================================================================================================================================================")
+
+# Frenet Coordinates to Cartesian Coordinates
+f_normal1 = ca.interpolant('f_normal1','linear',[track_data.arc_s.tolist()],track_data.n[0,:].tolist())
+f_normal2 = ca.interpolant('f_normal2','linear',[track_data.arc_s.tolist()],track_data.n[1,:].tolist())
+f_normal3 = ca.interpolant('f_normal3','linear',[track_data.arc_s.tolist()],track_data.n[2,:].tolist())
+
+f_xc = ca.interpolant('f_xc','linear',[track_data.arc_s.tolist()],track_data.xc.tolist())
+f_yc = ca.interpolant('f_yc','linear',[track_data.arc_s.tolist()],track_data.yc.tolist())
+f_zc = ca.interpolant('f_zc','linear',[track_data.arc_s.tolist()],track_data.zc.tolist())
+
+x_opt = np.array(f_xc(arc_s)).flatten() + n_opt * np.array(f_normal1(arc_s)).flatten()
+y_opt = np.array(f_yc(arc_s)).flatten() + n_opt * np.array(f_normal2(arc_s)).flatten()
+z_opt = np.array(f_zc(arc_s)).flatten() + n_opt * np.array(f_normal3(arc_s)).flatten()
+
+#====================================================================================================================================================================================================================
+# Plots 
+## Figure 1 - Racing Line
+fig = go.Figure()
+
+# Optimized Right Boundary Data
+fig.add_trace(go.Scatter3d(
+    x=track_data.br[0,:], y=track_data.br[1,:], z=track_data.br[2,:],
+    mode='lines',
+    name='Right Boundary - Optimized',
+    line=dict(color='blue', width=4)
+))
+
+# Optimized Left Boundary Data
+fig.add_trace(go.Scatter3d(
+    x=track_data.bl[0,:], y=track_data.bl[1,:], z=track_data.bl[2,:], 
+    mode='lines',
+    name='Left Boundary - Optimized',
+    line=dict(color='blue', width=4)
+))
+
+# Optimized Centerline
+fig.add_trace(go.Scatter3d(
+    x=track_data.xc, y=track_data.yc, z=track_data.zc, 
+    mode='lines',
+    name='Centerline Coordinates - Optimized',
+    line=dict(color='red', width=4, dash='dashdot')
+))
+
+# Optimal Racing Line Data
+fig.add_trace(go.Scatter3d(
+    x=x_opt, y=y_opt, z=z_opt,
+    mode='lines',
+    name='Optimized Racing Line',
+    line=dict(color='black', width=4)
+))
+
+fig.update_layout(
+    title="Circuit de Barcelona-Catalunya - 3D Track Geometry",
+    scene=dict(
+        xaxis_title='x-coordinate (m)',
+        yaxis_title='y-coordinate (m)',
+        zaxis_title='Elevation (m)',
+        aspectmode='data'),
+    margin=dict(l=0, r=0, b=0, t=50)
+)
+fig.show()
+
+
+# Vehicle Speed
+fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
+
+# Longitudinal Velocity
+ax1.plot(arc_s,u_opt,color='black')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Longitudinal Vehicle Velocity [m/s]')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='green')
+
+# Lateral Velocity
+ax2.plot(arc_s,v_opt,color='black')
+ax2.set_xlabel('Track Centerline Arc Length [m]')
+ax2.set_ylabel('Lateral Vehicle Velocity [m/s]')
+ax2.grid(True, alpha=0.3)
+ax2.axhline(0,color='green')
+
+plt.tight_layout()
+plt.show()
+
+# Vehicle Speed
+fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
+
+# Lap Time Plot
+ax1.plot(arc_s,time_opt,color='black')
+ax1.set_xlabel('Track Centerline Arc Length [m]')
+ax1.set_ylabel('Lap Time [sec]')
+ax1.grid(True, alpha=0.3)
+ax1.axhline(0,color='green')
+
+plt.tight_layout()
+plt.show()
