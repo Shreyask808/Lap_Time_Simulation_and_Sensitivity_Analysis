@@ -27,7 +27,7 @@ plt.close('all')
 
 #=======================================================================================================================================================================================================================
 # User Inputs
-h = 60                                                                              # Number of Segments the Track is divided into
+h = 100                                                                              # Number of Segments the Track is divided into
 p = 5                                                                               # Degree of the Polynomial approximating the state in segments
 
 print(f"#================================================================================================================================================================================================================")
@@ -191,6 +191,12 @@ g_continuity = []
 lbg_continuity = []
 ubg_continuity = []
 
+## Time Constraints
+g_time = []
+lbg_time = []
+ubg_time = []
+
+## Main Loop
 for k in range(h):
     F_dynamics = []
     X_segment = []
@@ -211,7 +217,12 @@ for k in range(h):
     for z in range(p):
         state = X_segment[z+1,:]
         ctrl = U_segment[z,:]
-        F_dynamics = vertcat(F_dynamics,f_dynamics(state,ctrl,s_segment[z+1]))   
+        F_dynamics = vertcat(F_dynamics,f_dynamics(state,ctrl,s_segment[z+1]))
+
+        g_time.append(X_segment[z+1,0] - X_segment[z,0])
+        lbg_time.append(1e-6)
+        ubg_time.append(np.inf)
+           
     g_dynamics.append(ca.mtimes(ca.DM(D), X_segment) - F_dynamics)
     lbg_dynamics.append(np.zeros(F_dynamics.shape))
     ubg_dynamics.append(np.zeros(F_dynamics.shape))
