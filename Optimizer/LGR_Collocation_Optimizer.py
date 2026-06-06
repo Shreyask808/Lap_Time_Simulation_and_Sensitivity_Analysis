@@ -28,7 +28,7 @@ plt.close('all')
 #=======================================================================================================================================================================================================================
 # User Inputs
 h = 200                                                                              # Number of Segments the Track is divided into
-p = 3                                                                               # Degree of the Polynomial approximating the state in segments
+p = 4                                                                               # Degree of the Polynomial approximating the state in segments
 
 print(f"#================================================================================================================================================================================================================")
 print(f"")
@@ -211,6 +211,12 @@ g_end = []
 lbg_end = []
 ubg_end = []
 
+## Cost Function Definition
+cost = 0
+e0 = 0
+e1 = 1e-4
+e2 = 1e-4
+
 ## Main Loop
 for k in range(h):
     F_dynamics = []
@@ -250,10 +256,15 @@ for k in range(h):
         g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(state[2])))**2)
         lbg_tire.append(-np.inf)
         ubg_tire.append(0)
+
+        cost = cost + e0*(state[1]**2) + e1*(ctrl[0]**2) + e2*(ctrl[1]**2)
            
     g_dynamics.append(ca.mtimes(ca.DM(D), X_segment) - (segment_length/2)*F_dynamics)
     lbg_dynamics.append(np.zeros(F_dynamics.shape))
     ubg_dynamics.append(np.zeros(F_dynamics.shape))
+
+### Complete Cost Function with Terminal and Integral Cost
+cost = cost + X[-1,0]/time_scale
 
 print(f"#================================================================================================================================================================================================================")
 print(f"")    
@@ -289,9 +300,6 @@ ubg = vertcat(
     *[vec(b) for b in ubg_tire],
     *[vec(b) for b in ubg_end]
 )
-## Cost Function Definition
-cost = 0
-cost = X[-1,0]/time_scale
 
 ## Limits and Initial Guess Definition
 lbx = np.full(states.shape, -np.inf)
@@ -479,8 +487,8 @@ ax2.axhline(0,color='green')
 plt.tight_layout()
 plt.show()
 
-# Vehicle Speed
-fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
+# Lap Time and Lateral Offset Plot
+fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
 
 # Lap Time Plot
 ax1.plot(arc_s,time_opt,color='black')
@@ -488,6 +496,16 @@ ax1.set_xlabel('Track Centerline Arc Length [m]')
 ax1.set_ylabel('Lap Time [sec]')
 ax1.grid(True, alpha=0.3)
 ax1.axhline(0,color='green')
+
+# Lateral Offset Plot
+ax2.plot(arc_s,n_opt,color='black',label = 'Optimal Racing Line')
+ax2.plot(track_data.arc_s,track_data.nl,color='red',label = 'Left Track Boundary')
+ax2.plot(track_data.arc_s,track_data.nr,color='blue',label = 'Right Track Boundary')
+ax2.set_xlabel('Track Centerline Arc Length [m]')
+ax2.set_ylabel('Lateral Offset [m]')
+ax2.grid(True, alpha=0.3)
+ax2.axhline(0,color='green')
+
 
 plt.tight_layout()
 plt.show()
