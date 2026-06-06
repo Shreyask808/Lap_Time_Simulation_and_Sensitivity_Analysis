@@ -32,8 +32,8 @@ vehicle.Droll = 0.6                                                         # La
 vehicle.delta_max = 0.35                                                     # Max Steering Angle in rad
 vehicle.delta_min = -0.35                                                    # Min Steering Angle in rad
 vehicle.A = 1.2                                                             # Frontal Area of the vehicle in m^2
-vehicle.Cd = 0.9                                                           # Drag Coefficient of the Vehicle [.] 
-vehicle.Cl = -vehicle.Cd*2.8                                                           # Lift Coefficient of the Vehicle [.]
+vehicle.Cd = 0.7                                                           # Drag Coefficient of the Vehicle [.] 
+vehicle.Cl = -vehicle.Cd*2.5                                                           # Lift Coefficient of the Vehicle [.]
 
 #=====================================================================================================================================================================================================================
 # Vehicle Mass and Interia Properties
@@ -50,8 +50,8 @@ vehicle.Irr = 1.2                                                           # Re
 vehicle.R = 0.360                                                           # Tire radius in m
 vehicle.w = 0.305                                                           # Tire width in m
 vehicle.Cp = 4e6                                                            # Tire stiffness per unit length in N/m^2
-vehicle.mu0 = 1.9                                                           # Static friction coefficient [.]
-vehicle.mu = 1.3                                                            # Sliding friction coefficient [.]
+vehicle.mu0 = 2.2                                                           # Static friction coefficient [.]
+vehicle.mu = 1.4                                                            # Sliding friction coefficient [.]
 vehicle.n = np.log(vehicle.mu0/vehicle.mu)/np.log(9000/2000)                # Friction Coefficient curve Exponent
 vehicle.constant = vehicle.mu0/(2000**vehicle.n)                            # Friction Coefficient curve constant
 vehicle.kv = 2e5                                                            # Vertical stiffness of the tire in N.m
@@ -61,7 +61,7 @@ vehicle.sidewall_len = 0.1                                                 # Tir
 
 #====================================================================================================================================================================================================================
 # Vehicle Powertrain Limits
-vehicle.peakdrivingpower = 880e3                                            # Vehicle peak power in W
+vehicle.peakdrivingpower = 678.587e3                                            # Vehicle peak power in W
 vehicle.peakbrakingpower = -1500e3                                          # Vehicle peak power in W
 vehicle.peakdrivingtorque = 1000                                            # Vehicle peak driving torque per tire in N.m
 vehicle.peakbrakingtorque = -3500                                           # Vehicle peak braking torque per tire in N.m
