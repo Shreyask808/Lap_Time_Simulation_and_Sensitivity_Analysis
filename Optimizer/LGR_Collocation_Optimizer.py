@@ -77,7 +77,7 @@ print(f"#=======================================================================
 ## Flipped Legendre-Gauss-Radau Points
 def flipped_LGR_points(N):
 
-    nodes, weights = roots_jacobi(N,1,0)
+    nodes, weights = roots_jacobi(N,0,1)
     col_points = np.sort(np.concatenate([[-1],nodes]))
     return col_points,weights
 
