@@ -27,8 +27,8 @@ plt.close('all')
 
 #=======================================================================================================================================================================================================================
 # User Inputs
-h = 200                                                                              # Number of Segments the Track is divided into
-p = 4                                                                               # Degree of the Polynomial approximating the state in segments
+h = 150                                                                              # Number of Segments the Track is divided into
+p = 5                                                                               # Degree of the Polynomial approximating the state in segments
 
 print(f"#================================================================================================================================================================================================================")
 print(f"")
