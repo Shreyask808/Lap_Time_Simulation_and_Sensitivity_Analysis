@@ -213,7 +213,7 @@ ubg_end = []
 
 ## Cost Function Definition
 cost = 0
-e0 = 1e-7
+e0 = 0
 e1 = 1e-4
 e2 = 1e-4
 
@@ -231,10 +231,11 @@ for k in range(h):
     U_segment = U[k*p:(k+1)*p,:]
     
     if k < (h-1):
-        g_continuity.append(X[(k+1)*(p+1),:] - X[(k+1)*(p+1)-1,:])
+        
+        g_continuity.append(X[(k+1)*(p+1),:] - X[(k+1)*(p+1)-1,:] - (sf - s_segment[p])*f_dynamics(X_segment[p,:],U_segment[p-1,:],s_segment[p]))
         lbg_continuity.append(np.zeros((1,4)))
         ubg_continuity.append(np.zeros((1,4)))
-    
+
     for z in range(p):
         state = X_segment[z+1,:]
         ctrl = U_segment[z,:]
