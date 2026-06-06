@@ -213,7 +213,7 @@ ubg_end = []
 
 ## Cost Function Definition
 cost = 0
-e0 = 0
+e0 = 1e-7
 e1 = 1e-4
 e2 = 1e-4
 
