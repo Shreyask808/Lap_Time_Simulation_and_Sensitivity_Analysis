@@ -79,9 +79,9 @@ def flipped_LGR_points(N):
 
     nodes, weights = roots_jacobi(N,1,0)
     col_points = np.sort(np.concatenate([[-1],nodes]))
-    return col_points
+    return col_points,weights
 
-col_p = flipped_LGR_points(p)
+col_p, weights = flipped_LGR_points(p)
 
 ## Lagrange Polynomial and its Derivative
 def lagrange_polynomials(col_p,I,N):
@@ -214,8 +214,8 @@ ubg_end = []
 ## Cost Function Definition
 cost = 0
 e0 = 0
-e1 = 1e-4
-e2 = 1e-4
+e1 = 1e-5
+e2 = 1e-5
 
 ## Main Loop
 for k in range(h):
@@ -257,7 +257,7 @@ for k in range(h):
         lbg_tire.append(-np.inf)
         ubg_tire.append(0)
 
-        cost = cost + e0*(state[1]**2) + e1*(ctrl[0]**2) + e2*(ctrl[1]**2)
+        cost = cost + (segment_length/2)*weights[z]*(e0*(state[1]**2) + e1*(ctrl[0]**2) + e2*(ctrl[1]**2))
            
     g_dynamics.append(ca.mtimes(ca.DM(D), X_segment) - (segment_length/2)*F_dynamics)
     lbg_dynamics.append(np.zeros(F_dynamics.shape))
