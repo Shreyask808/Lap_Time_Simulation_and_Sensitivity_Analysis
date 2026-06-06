@@ -181,7 +181,7 @@ w_mu = 1e9
 w_phi = w_mu
 
 # Track Width Weights
-w_nl = 1
+w_nl = 1e-1
 w_nr = w_nl
 
 # Initial Track Width Guess

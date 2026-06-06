@@ -213,9 +213,9 @@ ubg_end = []
 
 ## Cost Function Definition
 cost = 0
-e0 = 1e-5
-e1 = 1e-5
-e2 = 1e-5
+e0 = 1e-7
+e1 = 1e-4
+e2 = 1e-4
 
 ## Main Loop
 for k in range(h):
@@ -335,8 +335,9 @@ for node in range(h*(p+1)):
     x0[idx_t] = (s_current/vehicle.umax)*time_scale
 
     # Lateral Offset Limits and Initial Guess
-    lbx[idx_n] = (f_nr(s_current))*length_scale
-    ubx[idx_n] = (f_nl(s_current))*length_scale
+    s_for_bounds = float(s_f) if q == p else float(s_current)
+    lbx[idx_n] = float(f_nr(s_for_bounds))*length_scale
+    ubx[idx_n] = float(f_nl(s_for_bounds))*length_scale
     x0[idx_n] = 0
 
     # Longitudinal Velocity Limits and Initial Guess
