@@ -61,9 +61,9 @@ vehicle.sidewall_len = 0.1                                                 # Tir
 
 #====================================================================================================================================================================================================================
 # Vehicle Powertrain Limits
-vehicle.peakdrivingpower = 750e3                                            # Vehicle peak power in W
+vehicle.peakdrivingpower = 525e3                                            # Vehicle peak power in W
 vehicle.peakbrakingpower = -1500e3                                          # Vehicle peak power in W
-vehicle.peakdrivingtorque = 1000                                            # Vehicle peak driving torque per tire in N.m
+vehicle.peakdrivingtorque = (1000/750e3)*vehicle.peakdrivingpower                                            # Vehicle peak driving torque per tire in N.m
 vehicle.peakbrakingtorque = -3500                                           # Vehicle peak braking torque per tire in N.m
 
 #=====================================================================================================================================================================================================================
