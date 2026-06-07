@@ -110,6 +110,7 @@ print(f"#=======================================================================
 X_sym = SX.sym('X_sym',1,4)
 U_sym = SX.sym('U_sym',1,2)
 s = SX.sym('s')
+F = SX.sym('F')
 
 ## Interpolation Functions 
 f_kappa = ca.interpolant('f_kappa','bspline',[track_data.arc_s.tolist()],track_data.omega_z.tolist())
@@ -164,6 +165,10 @@ f_dynamics = Function('f_dynamics',[X_sym,U_sym,s],[ODE])
 X = SX.sym('X',h*(p+1),4)
 U = SX.sym('U',h*p,2)
 states = vertcat(reshape(X, -1, 1), reshape(U, -1, 1))
+
+# Tire Load Sensitivity
+mu = vehicle.constant*(F**vehicle.n)
+f_mu = Function('f_mu',[F],[mu])
 
 # Gauss Pseudospectral Differentiation Matrix Definition
 D = np.zeros((p,p+1))
@@ -254,7 +259,8 @@ for k in range(h):
         ubg_power.append(vehicle.peakdrivingpower)
 
         # Tire Force Constraint
-        g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (vehicle.mu0*(vehicle.m*vehicle.g - f_Lift(state[2])))**2)
+        Fz = (vehicle.m*vehicle.g - f_Lift(state[2]))
+        g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (f_mu(Fz)*Fz)**2)
         lbg_tire.append(-np.inf)
         ubg_tire.append(0)
 
@@ -337,8 +343,8 @@ for node in range(h*(p+1)):
 
     # Lateral Offset Limits and Initial Guess
     s_for_bounds = float(s_f) if q == p else float(s_current)
-    lbx[idx_n] = float(f_nr(s_for_bounds))*length_scale
-    ubx[idx_n] = float(f_nl(s_for_bounds))*length_scale
+    lbx[idx_n] = float(f_nr(s_for_bounds) + max(vehicle.Wf,vehicle.Wr)/2)*length_scale
+    ubx[idx_n] = float(f_nl(s_for_bounds) - max(vehicle.Wf,vehicle.Wr)/2)*length_scale
     x0[idx_n] = 0
 
     # Longitudinal Velocity Limits and Initial Guess
