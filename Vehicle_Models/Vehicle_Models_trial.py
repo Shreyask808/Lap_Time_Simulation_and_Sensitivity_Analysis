@@ -404,8 +404,8 @@ for r in range(N+1):
         lbx[idx_psi] = float((f_theta(s_grid[r]) - np.pi/3))*angle_scale
         ubx[idx_psi] = float((f_theta(s_grid[r]) + np.pi/3))*angle_scale
 
-    lbx[idx_n] = float(f_nr(s_grid[r]))*length_scale
-    ubx[idx_n] = float(f_nl(s_grid[r]))*length_scale
+    lbx[idx_n] = float(f_nr(s_grid[r]) + np.max(vehicle.Wf,vehicle.Wr)/2)*length_scale
+    ubx[idx_n] = float(f_nl(s_grid[r]) - np.max(vehicle.Wf,vehicle.Wr)/2)*length_scale
     lbx[idx_u]    = 2*speed_scale
     ubx[idx_u]    = vehicle.umax*speed_scale
 
