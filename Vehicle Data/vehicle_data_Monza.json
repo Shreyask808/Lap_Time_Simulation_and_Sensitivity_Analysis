@@ -30,12 +30,12 @@
     "alpha_max": 0.2617993877991494,
     "Crr": 0,
     "sidewall_len": 0.1,
-    "peakdrivingpower": 750000.0,
+    "peakdrivingpower": 525000.0,
     "peakbrakingpower": -1500000.0,
-    "peakdrivingtorque": 1000,
+    "peakdrivingtorque": 700.0,
     "peakbrakingtorque": -3500,
     "rho": 1.2,
     "g": 9.81,
-    "umax": 114.16778509907353,
-    "vmax": 30.591165818946713
+    "umax": 101.37003325955665,
+    "vmax": 27.162018548614252
 }
