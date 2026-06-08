@@ -27,7 +27,7 @@ plt.close('all')
 
 #=======================================================================================================================================================================================================================
 # User Inputs
-h = 150                                                                              # Number of Segments the Track is divided into
+h = 100                                                                              # Number of Segments the Track is divided into
 p = 5                                                                              # Degree of the Polynomial approximating the state in segments
 
 print(f"#================================================================================================================================================================================================================")
@@ -219,8 +219,8 @@ ubg_end = []
 ## Cost Function Definition
 cost = 0
 e0 = 0
-e1 = 1e-4
-e2 = 1e-4
+e1 = 1e-5
+e2 = 1e-5
 
 ## Main Loop
 for k in range(h):
@@ -260,7 +260,7 @@ for k in range(h):
 
         # Tire Force Constraint
         Fz = (vehicle.m*vehicle.g - f_Lift(state[2]))
-        g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (f_mu(Fz)*Fz)**2)
+        g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (f_mu(Fz/4)*Fz)**2)
         lbg_tire.append(-np.inf)
         ubg_tire.append(0)
 
@@ -359,13 +359,13 @@ for node in range(h*(p+1)):
 
     if q < p:
         # Drive / Brake Force Limits and Initial Guess
-        lbx[idx_Fd] = (4*vehicle.peakbrakingtorque/vehicle.R)*force_scale
-        ubx[idx_Fd] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
+        #lbx[idx_Fd] = (4*vehicle.peakbrakingtorque/vehicle.R)*force_scale
+        #ubx[idx_Fd] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
         x0[idx_Fd] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
 
         # Lateral Force Limits and Initial Guess
-        lbx[idx_Fn] = -(vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
-        ubx[idx_Fn] = (vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
+        #lbx[idx_Fn] = -(vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
+        #ubx[idx_Fn] = (vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
         x0[idx_Fn] = 0
 
 # Nonlinear Solver for Point Mass Model
@@ -520,5 +520,7 @@ fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
 ax1.scatter(F_n_opt/(vehicle.m*vehicle.g),F_d_opt/(vehicle.m*vehicle.g))
 ax1.set_xlabel('Lateral Acceleration in g')
 ax1.set_ylabel('Longitudinal Acceleration in g')
+ax1.axhline(0,color='black')
+ax1.axvline(0,color='black')
 plt.tight_layout()
 plt.show()
