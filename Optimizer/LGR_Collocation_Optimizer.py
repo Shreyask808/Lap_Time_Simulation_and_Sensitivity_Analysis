@@ -27,7 +27,7 @@ plt.close('all')
 
 #=======================================================================================================================================================================================================================
 # User Inputs
-h = 200                                                                              # Number of Segments the Track is divided into
+h = 250                                                                              # Number of Segments the Track is divided into
 p = 3                                                                              # Degree of the Polynomial approximating the state in segments
 
 print(f"#================================================================================================================================================================================================================")
@@ -460,7 +460,7 @@ fig.add_trace(go.Scatter3d(
     x=x_opt, y=y_opt, z=z_opt,
     mode='lines',
     name='Optimized Racing Line',
-    line=dict(color='black', width=4)
+    line=dict(color='black', width=10)
 ))
 
 fig.update_layout(
