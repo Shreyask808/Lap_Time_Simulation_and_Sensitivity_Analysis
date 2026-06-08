@@ -5,6 +5,7 @@
 
 import os
 import sys
+import matplotlib
 import numpy as np
 import pandas as pd
 import tkinter as tk
