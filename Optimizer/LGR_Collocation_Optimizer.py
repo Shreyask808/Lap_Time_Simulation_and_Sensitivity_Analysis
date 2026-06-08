@@ -491,7 +491,6 @@ ax2.set_xlabel('Track Centerline Arc Length [m]')
 ax2.set_ylabel('Lateral Vehicle Velocity [kmph]')
 ax2.grid(True, alpha=0.3)
 ax2.axhline(0,color='green')
-
 plt.tight_layout()
 plt.show()
 
@@ -513,7 +512,13 @@ ax2.set_xlabel('Track Centerline Arc Length [m]')
 ax2.set_ylabel('Lateral Offset [m]')
 ax2.grid(True, alpha=0.3)
 ax2.axhline(0,color='green')
+plt.tight_layout()
+plt.show()
 
-
+# gg Diagram
+fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
+ax1.scatter(F_n_opt/(vehicle.m*vehicle.g),F_d_opt/(vehicle.m*vehicle.g))
+ax1.set_xlabel('Lateral Acceleration in g')
+ax1.set_ylabel('Longitudinal Acceleration in g')
 plt.tight_layout()
 plt.show()
