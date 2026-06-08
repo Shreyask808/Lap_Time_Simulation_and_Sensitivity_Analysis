@@ -27,8 +27,8 @@ plt.close('all')
 
 #=======================================================================================================================================================================================================================
 # User Inputs
-h = 150                                                                              # Number of Segments the Track is divided into
-p = 5                                                                              # Degree of the Polynomial approximating the state in segments
+h = 200                                                                              # Number of Segments the Track is divided into
+p = 3                                                                              # Degree of the Polynomial approximating the state in segments
 
 print(f"#================================================================================================================================================================================================================")
 print(f"")
@@ -254,13 +254,13 @@ for k in range(h):
         ubg_time.append(np.inf)
 
         # Vehicle Power Constraint
-        g_power.append(state[2]*ctrl[0]/(force_scale*speed_scale))
-        lbg_power.append(vehicle.peakbrakingpower)
-        ubg_power.append(vehicle.peakdrivingpower)
+        g_power.append(state[2]*ctrl[0])
+        lbg_power.append(vehicle.peakbrakingpower*(force_scale*speed_scale))
+        ubg_power.append(vehicle.peakdrivingpower*(force_scale*speed_scale))
 
         # Tire Force Constraint
         Fz = (vehicle.m*vehicle.g - f_Lift(state[2]))
-        g_tire.append((ctrl[0]/force_scale)**2 + (ctrl[1]/force_scale)**2 - (f_mu(Fz/4)*Fz)**2)
+        g_tire.append((ctrl[0]/(2*force_scale))**2 + (ctrl[1]/(4*force_scale))**2 - (f_mu(Fz/4)*Fz/4)**2)
         lbg_tire.append(-np.inf)
         ubg_tire.append(0)
 
@@ -317,8 +317,8 @@ states_num = h*(p+1)*4
 
 ## Indexing Loop
 for node in range(h*(p+1)):
-    r = node//(p + 1)   # segment index
-    q = node%(p + 1)   # collocation point index within segment
+    r = node//(p + 1)
+    q = node%(p + 1)
     s_0 = r*segment_length
     s_f = (r+1)*segment_length
     s_idx = ((s_f - s_0)/2)*col_p + ((s_0 + s_f)/2)
@@ -353,19 +353,19 @@ for node in range(h*(p+1)):
     x0[idx_u] = vehicle.umax*speed_scale
 
     # Lateral Velocity Limits and Initial Guess
-    lbx[idx_v] = -vehicle.vmax*speed_scale
-    ubx[idx_v] = vehicle.vmax*speed_scale
+    #lbx[idx_v] = -vehicle.vmax*speed_scale
+    #ubx[idx_v] = vehicle.vmax*speed_scale
     x0[idx_v] = 0
 
     if q < p:
         # Drive / Brake Force Limits and Initial Guess
         #lbx[idx_Fd] = (4*vehicle.peakbrakingtorque/vehicle.R)*force_scale
-        #ubx[idx_Fd] = 2*(2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
+        #ubx[idx_Fd] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
         x0[idx_Fd] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
 
         # Lateral Force Limits and Initial Guess
-        #lbx[idx_Fn] = -(vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
-        #ubx[idx_Fn] = (vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
+        #lbx[idx_Fn] = -2*(vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
+        #ubx[idx_Fn] = 2*(vehicle.mu0*vehicle.m*vehicle.g - (0.5*vehicle.Cl)*vehicle.rho*vehicle.A*vehicle.umax**2)*force_scale
         x0[idx_Fn] = 0
 
 # Nonlinear Solver for Point Mass Model
@@ -374,7 +374,7 @@ print(f"")
 print(f"IPOPT Solver Running - ")
 print(f"")
 nlp = {'x': states,'f': cost,'g': g}
-opts = {'ipopt': {'max_iter': 4000,'print_level': 5,'mu_strategy': 'adaptive'}}
+opts = {'ipopt': {'max_iter': 6000,'print_level': 5,'mu_strategy': 'adaptive'}}
 solver = nlpsol('solver', 'ipopt', nlp, opts)
 sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
 full_sol = np.array(sol['x']).flatten()
