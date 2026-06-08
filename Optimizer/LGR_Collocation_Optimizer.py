@@ -220,7 +220,7 @@ ubg_end = []
 cost = 0
 e0 = 0
 e1 = 1e-4
-e2 = 1e-8
+e2 = 1e-4
 
 ## Main Loop
 for k in range(h):
@@ -360,7 +360,7 @@ for node in range(h*(p+1)):
     if q < p:
         # Drive / Brake Force Limits and Initial Guess
         #lbx[idx_Fd] = (4*vehicle.peakbrakingtorque/vehicle.R)*force_scale
-        #ubx[idx_Fd] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
+        #ubx[idx_Fd] = 2*(2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
         x0[idx_Fd] = (2*vehicle.peakdrivingtorque/vehicle.R)*force_scale
 
         # Lateral Force Limits and Initial Guess
