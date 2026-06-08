@@ -18,7 +18,6 @@ import json
 import pickle
 import casadi as ca
 from casadi import *
-import matplotlib
 matplotlib.use('Qt5Agg')
 import plotly.graph_objects as go
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Tire Models'))
