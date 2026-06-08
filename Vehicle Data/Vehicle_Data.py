@@ -31,8 +31,8 @@ vehicle.Weq = (vehicle.Wf + vehicle.Wr)/2                                   # Eq
 vehicle.Droll = 0.6                                                         # Lateral Load Distribution at the front axle [.]
 vehicle.delta_max = 0.35                                                     # Max Steering Angle in rad
 vehicle.delta_min = -0.35                                                    # Min Steering Angle in rad
-vehicle.A = 1.2                                                             # Frontal Area of the vehicle in m^2
-vehicle.Cd = 0.7                                                           # Drag Coefficient of the Vehicle [.] 
+vehicle.A = 1.5                                                             # Frontal Area of the vehicle in m^2
+vehicle.Cd = 0.8                                                           # Drag Coefficient of the Vehicle [.] 
 vehicle.Cl = -vehicle.Cd*2.5                                                           # Lift Coefficient of the Vehicle [.]
 
 #=====================================================================================================================================================================================================================
@@ -50,8 +50,8 @@ vehicle.Irr = 1.2                                                           # Re
 vehicle.R = 0.360                                                           # Tire radius in m
 vehicle.w = 0.305                                                           # Tire width in m
 vehicle.Cp = 4e6                                                            # Tire stiffness per unit length in N/m^2
-vehicle.mu0 = 1.7                                                           # Static friction coefficient [.]
-vehicle.mu = 1.0                                                            # Sliding friction coefficient [.]
+vehicle.mu0 = 2.3                                                           # Static friction coefficient [.]
+vehicle.mu = 1.3                                                            # Sliding friction coefficient [.]
 vehicle.n = np.log(vehicle.mu0/vehicle.mu)/np.log(2000/12000)                # Friction Coefficient curve Exponent
 vehicle.constant = vehicle.mu0/(2000**vehicle.n)                            # Friction Coefficient curve constant
 vehicle.kv = 2e5                                                            # Vertical stiffness of the tire in N.m
