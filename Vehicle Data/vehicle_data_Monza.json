@@ -32,7 +32,7 @@
     "sidewall_len": 0.1,
     "peakdrivingpower": 730000.0,
     "peakbrakingpower": -1500000.0,
-    "peakdrivingtorque": 973.3333333333333,
+    "peakdrivingtorque": 1000,
     "peakbrakingtorque": -1000,
     "rho": 1.2,
     "g": 9.81,
