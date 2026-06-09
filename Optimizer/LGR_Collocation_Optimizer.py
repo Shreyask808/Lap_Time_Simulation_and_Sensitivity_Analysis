@@ -388,6 +388,7 @@ full_sol = full_sol[h*(p+1):]
 
 u_opt = full_sol[:h*(p+1)]/speed_scale
 full_sol = full_sol[h*(p+1):]
+print(f"Max Speed: {np.max(u_opt)*(18/5)}")
 
 v_opt = full_sol[:h*(p+1)]/speed_scale
 full_sol = full_sol[h*(p+1):]
