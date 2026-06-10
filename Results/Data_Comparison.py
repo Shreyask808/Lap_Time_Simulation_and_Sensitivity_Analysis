@@ -70,13 +70,13 @@ else:
 
 
 fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
-ax1.plot(arc_length - 236,speed,color = 'orange',label = '2025 Barcelona GP Pole - Piastri (Lap 13 - 71.546 sec)')
-ax1.plot(Optimal_Solution.arc_s,Optimal_Solution.u_opt*(18/5),color = 'black',label = 'Optimal Speed Profile Generated (72.360 sec)')
-ax1.set_xlabel('Centerline Arc Length [m]')
-ax1.set_ylabel('Vehicle Speed [kmph]')
-ax1.set_xlim([Optimal_Solution.arc_s[0],Optimal_Solution.arc_s[-1]])
-ax1.grid(True,alpha=0.3)
-ax1.set_title('Barcelona - Catalunya Speed Profile Comparison')
-ax1.legend()
+ax2.plot(arc_length,speed,color = 'blue',label = '2025 Italian GP Pole - Verstappen (Lap 17 - 78.792 sec)') #- 236
+ax2.plot(Optimal_Solution.arc_s,Optimal_Solution.u_opt*(18/5),color = 'black',label = 'Optimal Speed Profile Generated (76.484 sec)')
+ax2.set_xlabel('Centerline Arc Length [m]')
+ax2.set_ylabel('Vehicle Speed [kmph]')
+ax2.set_xlim([Optimal_Solution.arc_s[0],Optimal_Solution.arc_s[-1]])
+ax2.grid(True,alpha=0.3)
+ax2.set_title('Monza Speed Profile Comparison')
+ax2.legend()
 plt.tight_layout()
 plt.show()
