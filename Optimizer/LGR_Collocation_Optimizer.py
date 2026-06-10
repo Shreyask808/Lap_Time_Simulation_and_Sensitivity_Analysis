@@ -379,7 +379,6 @@ solver = nlpsol('solver', 'ipopt', nlp, opts)
 sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
 full_sol = np.array(sol['x']).flatten()
 
-# Save Optimal Solution
 Optimal_Solution = SimpleNamespace()
 Optimal_Solution.arc_s = np.array(arc_s)
 Optimal_Solution.time_opt = full_sol[:h*(p+1)]/time_scale
@@ -400,19 +399,6 @@ Optimal_Solution.F_d_opt = full_sol[:h*p]/force_scale
 full_sol = full_sol[h*p:]
 
 Optimal_Solution.F_n_opt = full_sol[:h*p]/force_scale
-
-root = tk.Tk()
-root.withdraw()
-files = [('Pickle Files','*.pkl'), ('All Files', '*.*')]
-full_save_path = filedialog.asksaveasfilename(
-    defaultextension=".pkl",
-    filetypes=files,
-    title="Save Optimal Solution"
-)
-with open(full_save_path, 'wb') as f:
-    pickle.dump(Optimal_Solution, f, protocol=pickle.HIGHEST_PROTOCOL)
-print(f"Track data successfully saved to: {full_save_path}") 
-print(f"")
 print(f"#================================================================================================================================================================================================================")
 
 # Results
@@ -540,3 +526,17 @@ ax1.axhline(0,color='black')
 ax1.axvline(0,color='black')
 plt.tight_layout()
 plt.show()
+
+# Saving Optimal Solution
+root = tk.Tk()
+root.withdraw()
+files = [('Pickle Files','*.pkl'), ('All Files', '*.*')]
+full_save_path = filedialog.asksaveasfilename(
+    defaultextension=".pkl",
+    filetypes=files,
+    title="Save Optimal Solution"
+)
+with open(full_save_path, 'wb') as f:
+    pickle.dump(Optimal_Solution, f, protocol=pickle.HIGHEST_PROTOCOL)
+print(f"Track data successfully saved to: {full_save_path}") 
+print(f"")
