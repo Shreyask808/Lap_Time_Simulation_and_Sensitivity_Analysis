@@ -451,7 +451,7 @@ fig = go.Figure()
 fig.add_trace(go.Scatter3d(
     x=track_data.br[0,:], y=track_data.br[1,:], z=track_data.br[2,:],
     mode='lines',
-    name='Right Boundary - Optimized',
+    name='Right Boundary',
     line=dict(color='blue', width=4)
 ))
 
@@ -459,7 +459,7 @@ fig.add_trace(go.Scatter3d(
 fig.add_trace(go.Scatter3d(
     x=track_data.bl[0,:], y=track_data.bl[1,:], z=track_data.bl[2,:], 
     mode='lines',
-    name='Left Boundary - Optimized',
+    name='Left Boundary',
     line=dict(color='blue', width=4)
 ))
 
@@ -467,7 +467,7 @@ fig.add_trace(go.Scatter3d(
 fig.add_trace(go.Scatter3d(
     x=track_data.xc, y=track_data.yc, z=track_data.zc, 
     mode='lines',
-    name='Centerline Coordinates - Optimized',
+    name='Centerline',
     line=dict(color='red', width=4, dash='dashdot')
 ))
 
@@ -480,7 +480,7 @@ fig.add_trace(go.Scatter3d(
 ))
 
 fig.update_layout(
-    title="Circuit de Barcelona-Catalunya - 3D Track Geometry",
+    title="Autodromo Nazionale Monza - Optimal Racing Line",
     scene=dict(
         xaxis_title='x-coordinate (m)',
         yaxis_title='y-coordinate (m)',
