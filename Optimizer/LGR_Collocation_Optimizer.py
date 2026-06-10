@@ -379,38 +379,53 @@ solver = nlpsol('solver', 'ipopt', nlp, opts)
 sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
 full_sol = np.array(sol['x']).flatten()
 
-arc_s = np.array(arc_s)
-time_opt = full_sol[:h*(p+1)]/time_scale
+# Save Optimal Solution
+Optimal_Solution = SimpleNamespace()
+Optimal_Solution.arc_s = np.array(arc_s)
+Optimal_Solution.time_opt = full_sol[:h*(p+1)]/time_scale
 full_sol = full_sol[h*(p+1):]
 
-n_opt = full_sol[:h*(p+1)]/length_scale
+Optimal_Solution.n_opt = full_sol[:h*(p+1)]/length_scale
 full_sol = full_sol[h*(p+1):]
 
-u_opt = full_sol[:h*(p+1)]/speed_scale
+Optimal_Solution.u_opt = full_sol[:h*(p+1)]/speed_scale
 full_sol = full_sol[h*(p+1):]
-print(f"Max Speed: {np.max(u_opt)*(18/5)}")
+print(f"Max Speed: {np.max(Optimal_Solution.u_opt)*(18/5)}")
+print(f"")
 
-v_opt = full_sol[:h*(p+1)]/speed_scale
+Optimal_Solution.v_opt = full_sol[:h*(p+1)]/speed_scale
 full_sol = full_sol[h*(p+1):]
 
-F_d_opt = full_sol[:h*p]/force_scale
+Optimal_Solution.F_d_opt = full_sol[:h*p]/force_scale
 full_sol = full_sol[h*p:]
 
-F_n_opt = full_sol[:h*p]/force_scale
+Optimal_Solution.F_n_opt = full_sol[:h*p]/force_scale
+
+root = tk.Tk()
+root.withdraw()
+files = [('Pickle Files','*.pkl'), ('All Files', '*.*')]
+full_save_path = filedialog.asksaveasfilename(
+    defaultextension=".pkl",
+    filetypes=files,
+    title="Save Optimal Solution"
+)
+with open(full_save_path, 'wb') as f:
+    pickle.dump(Optimal_Solution, f, protocol=pickle.HIGHEST_PROTOCOL)
+print(f"Track data successfully saved to: {full_save_path}") 
 print(f"")
 print(f"#================================================================================================================================================================================================================")
 
 # Results
 print(f"#================================================================================================================================================================================================================")
 print(f"")
-print(f"Optimal Lap Time in Seconds is: {time_opt[-1]} [sec]")
-print(f"Shape of arc_s : {arc_s.shape}")
-print(f"Shape of Time Vector: {time_opt.shape}")
-print(f"Shape of N Vector: {n_opt.shape}")
-print(f"Shape of U Vector: {u_opt.shape}")
-print(f"Shape of V Vector: {v_opt.shape}")
-print(f"Shape of F_d Vector: {F_d_opt.shape}")
-print(f"Shape of F_n Vector: {F_n_opt.shape}")
+print(f"Optimal Lap Time in Seconds is: {Optimal_Solution.time_opt[-1]} [sec]")
+print(f"Shape of arc_s : {Optimal_Solution.arc_s.shape}")
+print(f"Shape of Time Vector: {Optimal_Solution.time_opt.shape}")
+print(f"Shape of N Vector: {Optimal_Solution.n_opt.shape}")
+print(f"Shape of U Vector: {Optimal_Solution.u_opt.shape}")
+print(f"Shape of V Vector: {Optimal_Solution.v_opt.shape}")
+print(f"Shape of F_d Vector: {Optimal_Solution.F_d_opt.shape}")
+print(f"Shape of F_n Vector: {Optimal_Solution.F_n_opt.shape}")
 print(f"")
 print(f"#================================================================================================================================================================================================================")
 
@@ -423,9 +438,9 @@ f_xc = ca.interpolant('f_xc','linear',[track_data.arc_s.tolist()],track_data.xc.
 f_yc = ca.interpolant('f_yc','linear',[track_data.arc_s.tolist()],track_data.yc.tolist())
 f_zc = ca.interpolant('f_zc','linear',[track_data.arc_s.tolist()],track_data.zc.tolist())
 
-x_opt = np.array(f_xc(arc_s)).flatten() + n_opt * np.array(f_normal1(arc_s)).flatten()
-y_opt = np.array(f_yc(arc_s)).flatten() + n_opt * np.array(f_normal2(arc_s)).flatten()
-z_opt = np.array(f_zc(arc_s)).flatten() + n_opt * np.array(f_normal3(arc_s)).flatten()
+Optimal_Solution.x_opt = np.array(f_xc(arc_s)).flatten() + Optimal_Solution.n_opt * np.array(f_normal1(arc_s)).flatten()
+Optimal_Solution.y_opt = np.array(f_yc(arc_s)).flatten() + Optimal_Solution.n_opt * np.array(f_normal2(arc_s)).flatten()
+Optimal_Solution.z_opt = np.array(f_zc(arc_s)).flatten() + Optimal_Solution.n_opt * np.array(f_normal3(arc_s)).flatten()
 
 #====================================================================================================================================================================================================================
 # Plots 
@@ -458,10 +473,10 @@ fig.add_trace(go.Scatter3d(
 
 # Optimal Racing Line Data
 fig.add_trace(go.Scatter3d(
-    x=x_opt, y=y_opt, z=z_opt,
+    x=Optimal_Solution.x_opt, y=Optimal_Solution.y_opt, z=Optimal_Solution.z_opt,
     mode='lines',
     name='Optimized Racing Line',
-    line=dict(color='black', width=10)
+    line=dict(color='black', width=7)
 ))
 
 fig.update_layout(
@@ -480,14 +495,14 @@ fig.show()
 fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
 
 # Longitudinal Velocity
-ax1.plot(arc_s,u_opt*18/5,color='black')
+ax1.plot(Optimal_Solution.arc_s,Optimal_Solution.u_opt*18/5,color='black')
 ax1.set_xlabel('Track Centerline Arc Length [m]')
 ax1.set_ylabel('Longitudinal Vehicle Velocity [kmph]')
 ax1.grid(True, alpha=0.3)
 ax1.axhline(0,color='green')
 
 # Lateral Velocity
-ax2.plot(arc_s,v_opt*18/5,color='black')
+ax2.plot(Optimal_Solution.arc_s,Optimal_Solution.v_opt*18/5,color='black')
 ax2.set_xlabel('Track Centerline Arc Length [m]')
 ax2.set_ylabel('Lateral Vehicle Velocity [kmph]')
 ax2.grid(True, alpha=0.3)
@@ -499,14 +514,14 @@ plt.show()
 fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
 
 # Lap Time Plot
-ax1.plot(arc_s,time_opt,color='black')
+ax1.plot(Optimal_Solution.arc_s,Optimal_Solution.time_opt,color='black')
 ax1.set_xlabel('Track Centerline Arc Length [m]')
 ax1.set_ylabel('Lap Time [sec]')
 ax1.grid(True, alpha=0.3)
 ax1.axhline(0,color='green')
 
 # Lateral Offset Plot
-ax2.plot(arc_s,n_opt,color='black',label = 'Optimal Racing Line')
+ax2.plot(Optimal_Solution.arc_s,Optimal_Solution.n_opt,color='black',label = 'Optimal Racing Line')
 ax2.plot(track_data.arc_s,track_data.nl,color='red',label = 'Left Track Boundary')
 ax2.plot(track_data.arc_s,track_data.nr,color='blue',label = 'Right Track Boundary')
 ax2.set_xlabel('Track Centerline Arc Length [m]')
@@ -518,7 +533,7 @@ plt.show()
 
 # gg Diagram
 fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
-ax1.scatter(-F_n_opt/(vehicle.m*vehicle.g),F_d_opt/(vehicle.m*vehicle.g))
+ax1.scatter(-Optimal_Solution.F_n_opt/(vehicle.m*vehicle.g),Optimal_Solution.F_d_opt/(vehicle.m*vehicle.g))
 ax1.set_xlabel('Lateral Acceleration in g')
 ax1.set_ylabel('Longitudinal Acceleration in g')
 ax1.axhline(0,color='black')
