@@ -11,8 +11,8 @@
     "delta_max": 0.35,
     "delta_min": -0.35,
     "A": 1.5,
+    "Cl": -3.0,
     "Cd": 1.1,
-    "Cl": -3.3000000000000003,
     "m": 798,
     "Iz": 1100,
     "Ifl": 1.2,
@@ -30,12 +30,12 @@
     "alpha_max": 0.2617993877991494,
     "Crr": 0,
     "sidewall_len": 0.1,
-    "peakdrivingpower": 839500.0,
+    "peakdrivingpower": 730000.0,
     "peakbrakingpower": -1500000.0,
     "peakdrivingtorque": 1000,
     "peakbrakingtorque": -1000,
     "rho": 1.2,
     "g": 9.81,
-    "umax": 94.65171817771217,
-    "vmax": 25.361851447936193
+    "umax": 90.34328718003833,
+    "vmax": 24.20741084146427
 }
