@@ -34,7 +34,6 @@ vehicle.delta_min = -0.35                                                    # M
 vehicle.A = 1.5                                                             # Frontal Area of the vehicle in m^2
 vehicle.Cd = 0.8                                                           # Drag Coefficient of the Vehicle [.] 
 vehicle.Cl = -vehicle.Cd*2.5                                                           # Lift Coefficient of the Vehicle [.]
-
 #=====================================================================================================================================================================================================================
 # Vehicle Mass and Interia Properties
 vehicle.m = 798                                                             # Vehicle Mass in kg
