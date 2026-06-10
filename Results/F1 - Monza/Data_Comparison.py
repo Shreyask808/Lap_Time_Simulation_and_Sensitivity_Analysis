@@ -8,6 +8,7 @@ from tkinter import filedialog
 import matplotlib.pyplot as plt
 from types import SimpleNamespace
 import json
+import pickle
 
 matplotlib.use('Qt5Agg')
 
@@ -50,15 +51,32 @@ for key, value in telemetrydata.items():
 
 # Convert to attribute-style access
 telemetry = SimpleNamespace(**telemetrydata)
-print(list(telemetrydata["tel"].keys()))
-
 arc_length = telemetrydata["tel"]["distance"]
 speed = telemetrydata["tel"]["speed"]
 
-fig, (ax1) = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
-ax1.plot(arc_length,speed,color = 'black')
+# Optimized Racing line
+# Import Optimized Data
+root = tk.Tk()
+root.withdraw()
+root.attributes('-topmost',True)
+
+file_path1 = filedialog.askopenfilename(title="Select the Optimized Data",filetypes=[("pickle files","*.pkl"),])
+if file_path1:
+    with open(file_path1, 'rb') as f:
+        Optimal_Solution = pickle.load(f)
+    print("Loaded Optimal Solution")
+else:
+    raise FileNotFoundError("Optimal Solution file not found")
+
+
+fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
+ax1.plot(arc_length,speed,color = 'blue',label = '2025 Italian GP Pole - Verstappen (Lap 17 - 78.792 sec)')
+ax1.plot(Optimal_Solution.arc_s,Optimal_Solution.u_opt*(18/5),color = 'black',label = 'Optimal Speed Profile Generated (76.484 sec)')
 ax1.set_xlabel('Centerline Arc Length [m]')
 ax1.set_ylabel('Vehicle Speed [kmph]')
+ax1.set_xlim([Optimal_Solution.arc_s[0],Optimal_Solution.arc_s[-1]])
 ax1.grid(True,alpha=0.3)
+ax1.set_title('Monza Speed Profile Comparison')
+ax1.legend()
 plt.tight_layout()
 plt.show()
