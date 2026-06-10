@@ -32,8 +32,8 @@ vehicle.Droll = 0.6                                                             
 vehicle.delta_max = 0.35                                                        # Max Steering Angle in rad
 vehicle.delta_min = -0.35                                                       # Min Steering Angle in rad
 vehicle.A = 1.5                                                                 # Frontal Area of the vehicle in m^2
-vehicle.Cd = 0.8                                                                # Drag Coefficient of the Vehicle [.] 
-vehicle.Cl = -vehicle.Cd*2.5                                                    # Lift Coefficient of the Vehicle [.]
+vehicle.Cd = 1.1                                                                # Drag Coefficient of the Vehicle [.] 
+vehicle.Cl = -vehicle.Cd*3.5                                                    # Lift Coefficient of the Vehicle [.]
 #=====================================================================================================================================================================================================================
 # Vehicle Mass and Interia Properties
 vehicle.m = 798                                                                 # Vehicle Mass in kg
