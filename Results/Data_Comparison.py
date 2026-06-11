@@ -96,13 +96,13 @@ else:
 
 
 fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
-ax2.plot(arc_length,speed,color = 'blue',label = '2025 Italian GP Pole - Verstappen (Lap 17 - 78.792 sec)') #- 236
-ax2.plot(Optimal_Solution.arc_s,Optimal_Solution.u_opt*(18/5),color = 'black',label = 'Optimal Speed Profile Generated (76.484 sec)')
+ax2.plot(arc_length - 236,speed,color = 'orange',label = '2025 Spanish GP Pole - Piastri (Lap 13 - 71.546 sec)') #- 236
+ax2.plot(Optimal_Solution.arc_s,Optimal_Solution.u_opt*(18/5),color = 'black',label = 'Optimal Speed Profile Generated (70.176 sec)')
 ax2.set_xlabel('Centerline Arc Length [m]')
 ax2.set_ylabel('Vehicle Speed [kmph]')
 ax2.set_xlim([Optimal_Solution.arc_s[0],Optimal_Solution.arc_s[-1]])
 ax2.grid(True,alpha=0.3)
-ax2.set_title('Monza Speed Profile Comparison')
+ax2.set_title('Barcelona Catalunya Speed Profile Comparison')
 ax2.legend()
 plt.tight_layout()
 plt.show()
@@ -111,7 +111,7 @@ plt.show()
 fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2,figsize=(10,12))
 # Peak Power Sensitivity
 ax1.plot(power_change,monza_power,color='red',label='Monza')
-ax1.plot(power_change,barcelona_power,color='blue',label='Barcelona Catlunya')
+ax1.plot(power_change,barcelona_power,color='blue',label='Barcelona Catalunya')
 ax1.set_xlabel('Change in Engine Peak Power [%]')
 ax1.set_ylabel('Normalized Lap Time [.]')
 ax1.grid(True,alpha=0.3)
@@ -120,28 +120,28 @@ ax1.legend()
 
 # Vehicle Weight Sensitivity
 ax2.plot(mass_change,monza_mass,color='red',label='Monza')
-ax2.plot(mass_change,barcelona_mass,color='blue',label='Barcelona Catlunya')
+ax2.plot(mass_change,barcelona_mass,color='blue',label='Barcelona Catalunya')
 ax2.set_xlabel('Change in Vehicle Mass [kg]')
 ax2.set_ylabel('Normalized Lap Time [.]')
-ax2.set_title('Veihcle Mass Sensitivity (Baseline Vehicle Mass = 798 kg)')
+ax2.set_title('Vehicle Mass Sensitivity (Baseline Vehicle Mass = 798 kg)')
 ax2.legend()
 ax2.grid(True,alpha=0.3)
 
 # Drag Sensitivity
 ax3.plot(drag_eff,monza_drag,color='red',label='Monza')
-ax3.plot(drag_eff,barcelona_drag,color='blue',label='Barcelona Catlunya')
-ax3.set_xlabel('Aerodynamic Efficiency [.]')
+ax3.plot(drag_eff,barcelona_drag,color='blue',label='Barcelona Catalunya')
+ax3.set_xlabel('Aerodynamic Efficiency ($- C_l/C_d$) [.]')
 ax3.set_ylabel('Normalized Lap Time [.]')
-ax3.set_title('Drag Sensitivity')
+ax3.set_title('Drag Sensitivity (Constant Lift Coefficient ($C_l$))')
 ax3.legend()
 ax3.grid(True,alpha=0.3)
 
 # Downforce Sensitivity
 ax4.plot(df_eff,monza_df,color='red',label='Monza')
-ax4.plot(df_eff,barcelona_df,color='blue',label='Barcelona Catlunya')
-ax4.set_xlabel('Aerodynamic Efficiency [.]')
+ax4.plot(df_eff,barcelona_df,color='blue',label='Barcelona Catalunya')
+ax4.set_xlabel('Aerodynamic Efficiency ($- C_l/C_d$)[.]')
 ax4.set_ylabel('Normalized Lap Time [.]')
-ax4.set_title('Downforce Sensitivity')
+ax4.set_title('Downforce Sensitivity (Constant Drag Coefficient ($C_d$))')
 ax4.legend()
 ax4.grid(True,alpha=0.3)
 
