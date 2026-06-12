@@ -176,12 +176,12 @@ w_l = w_c
 w_r = w_c
 
 # Track Euler Angle Weights
-w_theta = 3e3
+w_theta = 1e4
 w_mu = 1e9
 w_phi = w_mu
 
 # Track Width Weights
-w_nl = 1e-2
+w_nl = 1e-1
 w_nr = w_nl
 
 # Initial Track Width Guess

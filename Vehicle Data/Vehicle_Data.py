@@ -20,39 +20,39 @@ plt.close('all')
 # ======================================================================================================================================================================================================================
 # Vehicle Dimension Data
 vehicle = SimpleNamespace()
-vehicle.l = 3.6                                                             # Wheelbase in m
-vehicle.d = 1.65                                                            # Distance between rear axle and cg in m
-vehicle.hcg = 0.28                                                          # Height of the cg from ground in m
-vehicle.hcp = 0.20                                                          # Height of the cp from ground in m
-vehicle.a = 0.5                                                             # Position of Center of Pressure (cp) behind cg in m
-vehicle.Wf = 1.7                                                            # Front Trackwidth in m
-vehicle.Wr = 1.7                                                            # Rear Trackwidth in m
-vehicle.Weq = (vehicle.Wf + vehicle.Wr)/2                                   # Equivalent Trackwidth of the vehicle in m
-vehicle.Droll = 0.7                                                         # Lateral Load Distribution at the front axle [.]
-vehicle.delta_max = 0.4                                                     # Max Steering Angle in rad
-vehicle.delta_min = -0.4                                                    # Min Steering Angle in rad
-vehicle.A = 1.2                                                             # Frontal Area of the vehicle in m^2
-vehicle.Cd = 1.00                                                           # Drag Coefficient of the Vehicle [.] 
-vehicle.Cl = -3.5                                                           # Lift Coefficient of the Vehicle [.]
+vehicle.l = 3.6                                                                 # Wheelbase in m
+vehicle.d = 1.65                                                                # Distance between rear axle and cg in m
+vehicle.hcg = 0.28                                                              # Height of the cg from ground in m
+vehicle.hcp = 0.15                                                              # Height of the cp from ground in m
+vehicle.a = 0.3                                                                 # Position of Center of Pressure (cp) behind cg in m
+vehicle.Wf = 2                                                                  # Front Trackwidth in m
+vehicle.Wr = 2                                                                  # Rear Trackwidth in m
+vehicle.Weq = (vehicle.Wf + vehicle.Wr)/2                                       # Equivalent Trackwidth of the vehicle in m
+vehicle.Droll = 0.6                                                             # Lateral Load Distribution at the front axle [.]
+vehicle.delta_max = 0.35                                                        # Max Steering Angle in rad
+vehicle.delta_min = -0.35                                                       # Min Steering Angle in rad
+vehicle.A = 1.5                                                                 # Frontal Area of the vehicle in m^2
+vehicle.Cl = -3.0                                                               # Lift Coefficient of the Vehicle [.]
+vehicle.Cd = 1.1                                                                # Drag Coefficient of the Vehicle [.] 
 
 #=====================================================================================================================================================================================================================
 # Vehicle Mass and Interia Properties
-vehicle.m = 800                                                             # Vehicle Mass in kg
-vehicle.Iz = 900                                                            # Vehicle Moment of Interia about cg in kg.m^2 
+vehicle.m = 798                                                                 # Vehicle Mass in kg
+vehicle.Iz = 1100                                                               # Vehicle Moment of Interia about cg in kg.m^2 
 # Vehicle Axle Interia
-vehicle.Ifl = 1.5                                                           # Front Left Wheel Moment of Interia in kg.m^2
-vehicle.Ifr = 1.5                                                           # Front Right Wheel Moment of Interia in kg.m^2
-vehicle.Irl = 1.5                                                           # Rear Left Wheel Moment of Interia in kg.m^2
-vehicle.Irr = 1.5                                                           # Rear Right Wheel Moment of Interia in kg.m^2
+vehicle.Ifl = 1.2                                                               # Front Left Wheel Moment of Interia in kg.m^2
+vehicle.Ifr = 1.2                                                               # Front Right Wheel Moment of Interia in kg.m^2
+vehicle.Irl = 1.2                                                               # Rear Left Wheel Moment of Interia in kg.m^2
+vehicle.Irr = 1.2                                                               # Rear Right Wheel Moment of Interia in kg.m^2
 
 #=====================================================================================================================================================================================================================
 # Vehicle Tire Data
 vehicle.R = 0.360                                                           # Tire radius in m
 vehicle.w = 0.305                                                           # Tire width in m
 vehicle.Cp = 4e6                                                            # Tire stiffness per unit length in N/m^2
-vehicle.mu0 = 2.0                                                           # Static friction coefficient [.]
+vehicle.mu0 = 2.3                                                           # Static friction coefficient [.]
 vehicle.mu = 1.3                                                            # Sliding friction coefficient [.]
-vehicle.n = np.log(vehicle.mu0/vehicle.mu)/np.log(9000/2000)                # Friction Coefficient curve Exponent
+vehicle.n = np.log(vehicle.mu0/vehicle.mu)/np.log(2000/12000)                # Friction Coefficient curve Exponent
 vehicle.constant = vehicle.mu0/(2000**vehicle.n)                            # Friction Coefficient curve constant
 vehicle.kv = 2e5                                                            # Vertical stiffness of the tire in N.m
 vehicle.alpha_max = math.radians(15.0)                                      # Maximum tire slip angle in rad
@@ -61,10 +61,10 @@ vehicle.sidewall_len = 0.1                                                 # Tir
 
 #====================================================================================================================================================================================================================
 # Vehicle Powertrain Limits
-vehicle.peakdrivingpower = 880e3                                            # Vehicle peak power in W
+vehicle.peakdrivingpower = 730e3                                            # Vehicle peak power in W
 vehicle.peakbrakingpower = -1500e3                                          # Vehicle peak power in W
 vehicle.peakdrivingtorque = 1000                                            # Vehicle peak driving torque per tire in N.m
-vehicle.peakbrakingtorque = -3500                                           # Vehicle peak braking torque per tire in N.m
+vehicle.peakbrakingtorque = -1000                                           # Vehicle peak braking torque per tire in N.m
 
 #=====================================================================================================================================================================================================================
 # Miscellaneous Data
