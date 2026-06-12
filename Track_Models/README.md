@@ -130,7 +130,7 @@ where $\bar{\mathbf{b}}_l$, $\bar{\mathbf{b}}_r$ and $\bar{\mathbf{c}}$ are the 
 
 #### Dynamics Constraints
 
-The continuous track dynamics $(\dot{X} = f(s,X,U))$, defined in the preceing sections are enforced as equality constraints across all N discretized nodes in the nonlinear optimal control problem. To numerically integrate the dynamics over the arc length domain (s), a 4th-order Range-Kutta scheme is employed at each segment, yielding:<br>
+The continuous track dynamics $(\dot{X} = f(s,X,U))$, defined in the previous sections are enforced as equality constraints across all N discretized nodes in the nonlinear optimal control problem. To numerically integrate the dynamics over the arc length domain (s), a 4th-order Range-Kutta scheme is employed at each segment, yielding:<br>
 <br>
 $X_{k+1} = X_k + \frac{\Delta s}{6}.[f_1 + 2f_2 + 2f_3 + f_4]$<br>
 <br>
